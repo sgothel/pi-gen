@@ -1,14 +1,18 @@
 ssh less fbset sudo psmisc strace ed ncdu crda
 console-setup keyboard-configuration debconf-utils parted unzip
-build-essential manpages-dev python3 bash-completion gdb pkg-config
+#build-essential manpages-dev python3 bash-completion gdb pkg-config
+libstdc++6
+python3 bash-completion pkg-config
 python3-rpi.gpio v4l-utils
+v4l-utils
 python3-gpiozero
 avahi-daemon
 lua5.1
 luajit
 hardlink ca-certificates curl
 fake-hwclock nfs-common usbutils
-libraspberrypi-dev libraspberrypi-doc libfreetype6-dev
+#libraspberrypi-dev libraspberrypi-doc libfreetype6-dev
+libraspberrypi-dev libfreetype6-dev
 dosfstools
 dphys-swapfile
 raspberrypi-sys-mods
@@ -18,7 +22,7 @@ usb-modeswitch
 libpam-chksshpwd
 rpi-update
 libmtp-runtime
-rsync
+#rsync
 htop
 man-db
 policykit-1
@@ -26,7 +30,7 @@ ssh-import-id
 rng-tools
 ethtool
 vl805fw
-ntfs-3g
+#ntfs-3g
 pciutils
 rpi-eeprom
 raspinfo
