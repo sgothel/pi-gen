@@ -1,3 +1,15 @@
+# Merged Zafena settings (old pi-gen and newer zaf502 machine)
+dtoverlay=sdtweak,force_pio=1
+
+dtparam=i2s=on
+dtparam=spi=on
+dtoverlay=zafena-rpi
+enable_uart=1
+dtoverlay=rpi-dac
+
+dtoverlay=pi3-miniuart-bt
+core_freq=250
+
 # For more options and information see
 # http://rpf.io/configtxt
 # Some settings may impact device functionality. See link above for details
@@ -7,7 +19,7 @@
 
 # uncomment this if your display has a black border of unused pixels visible
 # and your display can output without overscan
-#disable_overscan=1
+disable_overscan=1
 
 # uncomment the following to adjust overscan. Use positive numbers if console
 # goes off screen, and negative if there is too much border
@@ -23,7 +35,6 @@
 
 # uncomment if hdmi display is not detected and composite is being output
 #hdmi_force_hotplug=1
-hdmi_force_hotplug=1
 
 # uncomment to force a specific HDMI mode (this will force VGA)
 #hdmi_group=1
@@ -43,20 +54,9 @@ hdmi_force_hotplug=1
 #uncomment to overclock the arm. 700 MHz is the default.
 #arm_freq=800
 
-# Merged Zafena settings (old pi-gen and newer zaf502 machine)
-dtoverlay=sdtweak,force_pio=1
-dtparam=i2s=on
-dtparam=spi=on
-dtoverlay=zafena-rpi
-enable_uart=1
-dtoverlay=rpi-dac
-
-dtoverlay=pi3-miniuart-bt
-core_freq=250
-
 # Uncomment some or all of these to enable the optional hardware interfaces
 #dtparam=i2c_arm=on
-dtparam=i2c_arm=off,i2s=on,spi=on
+#dtparam=i2c_arm=off,i2s=on,spi=on
 #dtparam=i2s=on
 #dtparam=spi=on
 
@@ -74,8 +74,8 @@ dtparam=i2c_arm=off,i2s=on,spi=on
 
 arm_64bit=1
 
-start_x=0
-gpu_mem=128
+#start_x=0
+#gpu_mem=128
 
 [pi4]
 # Enable DRM VC4 V3D driver on top of the dispmanx display stack
