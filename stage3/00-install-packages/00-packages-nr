@@ -4,5 +4,6 @@ xserver-xorg xinit
 #zenity xdg-utils
 #gvfs-backends gvfs-fuse
 #lightdm gnome-themes-standard gnome-icon-theme
+#blackbox lxterminal
 dwm stterm
-lightdm
+#lightdm
