@@ -13,6 +13,7 @@ raspberrypi-net-mods
 tree
 #libgl1-mesa-dri libgles1 libgles2-mesa xcompmgr
 libgl1-mesa-dri libgles1 libgles2-mesa
+mesa-utils
 #geany
 #piclone
 #wiringpi pigpio python3-pigpio raspi-gpio python3-rpi.gpio
