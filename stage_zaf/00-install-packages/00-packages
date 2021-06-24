@@ -6,7 +6,7 @@ fonts-nanum
 libopenal1
 ser2net
 bluez
-ffmpeg
+#ffmpeg
 xloadimage
 unclutter
 ntpdate
