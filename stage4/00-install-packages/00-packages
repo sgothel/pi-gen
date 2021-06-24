@@ -23,5 +23,5 @@ libgl1-mesa-dri libgles1 libgles2-mesa
 #pprompt
 piwiz
 rp-prefapps
-ffmpeg
+#ffmpeg
 #vlc
