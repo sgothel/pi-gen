@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zaf101>
+<config parameter="timezone" value="Europe/Helsinki"/>
+<config parameter="lang" value="en"/>
+<config parameter="prov-id" value="LID"/>
+<config parameter="EDI" value="astm"/>
+<config parameter="astm-specimentype" value="HL7"/>
+<config parameter="server-ip" value="192.168.1.115"/>
+<config parameter="server-port" value="8080"/>
+<config parameter="wifi" value="off"/>
+<config parameter="wifi-ssid" value="ZAFENA"/>
+<config parameter="wifi-psk" value="simplepassword"/>
+<config parameter="wifi-country" value="SE"/>
+<config parameter="zac-maxInr" value="10.0"/>
+<config parameter="BIC1Port" value="5991"/>
+<config parameter="DataPath" value="data"/>
+</zaf101>
