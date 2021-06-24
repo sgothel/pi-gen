@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="ISO-8859-1"?><Interchange><Version>1</Version><Sender></Sender><SubSender>ZAF101-1</SubSender><InterchangeDate>20180424</InterchangeDate><InterchangeTime>1546</InterchangeTime>
+<Message><MessageType>MEDRPT</MessageType><DocumentType>999</DocumentType><SendTime>201804241546</SendTime>
+<PersonID></PersonID><LID></LID><RID></RID><REAGENT_LOT>P161M1</REAGENT_LOT><LMCID>256</LMCID><RequestorId>SS</RequestorId>
+<ReportCommentary>
+
+Läsar ID:      
+LID/RID:       
+Analys nummer: 
+Datum:         20180424 1546
+Operatör:         
+
+INR ERROR:              -.--
+
+EVF:           
+Tid:           
+Temperatur:    
+
+</ReportCommentary>
+
+
+</Message></Interchange>

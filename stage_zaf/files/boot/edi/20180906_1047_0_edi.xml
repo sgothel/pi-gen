@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="ISO-8859-1"?><Interchange><Version>1</Version><Sender></Sender><SubSender></SubSender><InterchangeDate>20180906</InterchangeDate><InterchangeTime>1047</InterchangeTime>
+<Message><MessageType>MEDRPT</MessageType><DocumentType>999</DocumentType><SendTime>201809061047</SendTime>
+<PersonID></PersonID><LID>1212121</LID><RID>1212121</RID><REAGENT_LOT></REAGENT_LOT><CODE_LOT>S113X</CODE_LOT><USER_ID></USER_ID><LMCID>HHB1</LMCID><RequestorId></RequestorId>
+<ReportCommentary>
+
+</ReportCommentary>
+<Group><CollectionDate>20180906</CollectionDate><CollectionTime>1047</CollectionTime><Test>
+<Result>0.2</Result><Unit>g/L</Unit><SpecimenSource>BLDC</SpecimenSource><Pathological>0</Pathological><LOINC>718-7</LOINC></Test></Group>
+</Message></Interchange>

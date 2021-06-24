@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="ISO-8859-1"?><Interchange><Version>1</Version><Sender></Sender><SubSender>CYBOW 11  </SubSender><InterchangeDate>20180430</InterchangeDate><InterchangeTime>1330</InterchangeTime>
+<Message><MessageType>MEDRPT</MessageType><DocumentType>999</DocumentType><SendTime>201804301330</SendTime>
+<PersonID></PersonID><LID>7203060699</LID><RID>7203060699</RID><REAGENT_LOT>D1.02 180123</REAGENT_LOT><CODE_LOT>S113X</CODE_LOT><USER_ID>FRWE</USER_ID><LMCID>666</LMCID><RequestorId>D2118098   </RequestorId>
+<ReportCommentary>
+
+</ReportCommentary>
+<Group><CollectionDate>20180430</CollectionDate><CollectionTime>1330</CollectionTime><Test>
+<Result>1.6</Result><Unit>umol&#8260;L</Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>50563-6</LOINC></Test></Group>
+<Group><CollectionDate>20180430</CollectionDate><CollectionTime>1330</CollectionTime><Test>
+<Result>A14</Result><Unit>mmol&#8260;L</Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>53328-1</LOINC></Test></Group>
+<Group><CollectionDate>20180430</CollectionDate><CollectionTime>1330</CollectionTime><Test>
+<Result>A+++</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>53327-3</LOINC></Test></Group>
+<Group><CollectionDate>20180430</CollectionDate><CollectionTime>1330</CollectionTime><Test>
+<Result>A0.5</Result><Unit>mmol&#8260;L</Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>50557-8</LOINC></Test></Group>
+<Group><CollectionDate>20180430</CollectionDate><CollectionTime>1330</CollectionTime><Test>
+<Result>1.020</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>53326-5</LOINC></Test></Group>
+<Group><CollectionDate>20180430</CollectionDate><CollectionTime>1330</CollectionTime><Test>
+<Result>A10</Result><Unit>&#8260;uL</Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>798-9</LOINC></Test></Group>
+<Group><CollectionDate>20180430</CollectionDate><CollectionTime>1330</CollectionTime><Test>
+<Result>6.5</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>50560-2</LOINC></Test></Group>
+<Group><CollectionDate>20180430</CollectionDate><CollectionTime>1330</CollectionTime><Test>
+<Result>A0.3</Result><Unit>g&#8260;L</Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>50561-0</LOINC></Test></Group>
+<Group><CollectionDate>20180430</CollectionDate><CollectionTime>1330</CollectionTime><Test>
+<Result>APos</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>50558-6</LOINC></Test></Group>
+<Group><CollectionDate>20180430</CollectionDate><CollectionTime>1330</CollectionTime><Test>
+<Result>A25</Result><Unit>&#8260;uL</Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>51487-7</LOINC></Test></Group>
+<Group><CollectionDate>20180430</CollectionDate><CollectionTime>1330</CollectionTime><Test>
+<Result>0</Result><Unit>mmol&#8260;L</Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>16408-7</LOINC></Test></Group>
+
+</Message></Interchange>

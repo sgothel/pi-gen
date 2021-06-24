@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="ISO-8859-1"?><Interchange><Version>1</Version><Sender></Sender><SubSender>Simple Simon 957</SubSender><InterchangeDate>20161024</InterchangeDate><InterchangeTime>1540</InterchangeTime>
+<Message><MessageType>MEDRPT</MessageType><DocumentType>999</DocumentType><SendTime>201610241540</SendTime>
+<PersonID></PersonID><LID>18427229</LID><RID>18427229</RID><SS_LOT>P161M </SS_LOT><CODE_LOT>Q432X</CODE_LOT><LMCID>7927</LMCID><RequestorId>SS957</RequestorId>
+<ReportCommentary>
+
+Läsar ID:      957
+LID/RID:       18427229
+Analys nummer: 9
+Datum:         20161024 1540
+Operatör:         
+
+Venös-INR:              3.25
+
+EVF:           0.35
+Tid:           112.1
+Temperatur:    23.7
+
+</ReportCommentary>
+<Group><CollectionDate>20161024</CollectionDate><CollectionTime>1540</CollectionTime><Test>
+<Result>3.25</Result><SpecimenSource>BLDV</SpecimenSource><Pathological>0</Pathological><TestID>NPU01685</TestID><TestDescription>P-PK (INR)</TestDescription><TestCommentary>Referensområde obehandlade patienter &lt;1,2. Terapeutiskt område 2,0 - 3,0 vid AK-behandling.</TestCommentary></Test></Group><Group><CollectionDate>20161024</CollectionDate><CollectionTime>1540</CollectionTime><Test>
+<Result>0.35</Result><Pathological>0</Pathological><TestID>NPU01961</TestID><TestDescription>EVF</TestDescription><TestCommentary>Erytrocyt-volym-fraktion ca 0.2 till 0.7 används för att korrigera INR, stora avikelser kan tyda på felaktig provtagning.</TestCommentary></Test></Group>
+</Message></Interchange>

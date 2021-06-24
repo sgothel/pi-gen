@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="ISO-8859-1"?><Interchange><Version>1</Version><Sender></Sender><SubSender></SubSender><InterchangeDate>20180515</InterchangeDate><InterchangeTime>1521</InterchangeTime>
+<Message><MessageType>MEDRPT</MessageType><DocumentType>999</DocumentType><SendTime>201805151521</SendTime>
+<PersonID></PersonID><LID></LID><RID></RID><REAGENT_LOT></REAGENT_LOT><CODE_LOT>S113X</CODE_LOT><USER_ID></USER_ID><LMCID>666</LMCID><RequestorId></RequestorId>
+<ReportCommentary>
+
+</ReportCommentary>
+
+</Message></Interchange>

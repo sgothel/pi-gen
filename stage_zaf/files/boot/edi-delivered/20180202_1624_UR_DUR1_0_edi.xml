@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="ISO-8859-1"?><Interchange><Version>1</Version><Sender></Sender><SubSender>CYBOW 8A  </SubSender><InterchangeDate>20180202</InterchangeDate><InterchangeTime>1624</InterchangeTime>
+<Message><MessageType>MEDRPT</MessageType><DocumentType>999</DocumentType><SendTime>201802021624</SendTime>
+<PersonID></PersonID><LID>FIRST 8A</LID><RID>FIRST 8A</RID><REAGENT_LOT>D1.02 180123</REAGENT_LOT><CODE_LOT>S46X</CODE_LOT><USER_ID>XRS1</USER_ID><LMCID>DUR1</LMCID><RequestorId>D2118072   </RequestorId>
+<ReportCommentary>
+
+</ReportCommentary>
+<Group><CollectionDate>20180202</CollectionDate><CollectionTime>1624</CollectionTime><Test>
+<Result>A3+</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>798-9</LOINC></Test></Group>
+<Group><CollectionDate>20180202</CollectionDate><CollectionTime>1624</CollectionTime><Test>
+<Result>A2+</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>50557-8</LOINC></Test></Group>
+<Group><CollectionDate>20180202</CollectionDate><CollectionTime>1624</CollectionTime><Test>
+<Result>8</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>50560-2</LOINC></Test></Group>
+<Group><CollectionDate>20180202</CollectionDate><CollectionTime>1624</CollectionTime><Test>
+<Result>A1+</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>53328-1</LOINC></Test></Group>
+<Group><CollectionDate>20180202</CollectionDate><CollectionTime>1624</CollectionTime><Test>
+<Result>A3+</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>50561-0</LOINC></Test></Group>
+<Group><CollectionDate>20180202</CollectionDate><CollectionTime>1624</CollectionTime><Test>
+<Result>APos</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>50558-6</LOINC></Test></Group>
+<Group><CollectionDate>20180202</CollectionDate><CollectionTime>1624</CollectionTime><Test>
+<Result>A3+</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>51487-7</LOINC></Test></Group>
+<Group><CollectionDate>20180202</CollectionDate><CollectionTime>1624</CollectionTime><Test>
+<Result>Neg</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>16408-7</LOINC></Test></Group>
+
+</Message></Interchange>

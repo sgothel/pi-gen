@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="ISO-8859-1"?><Interchange><Version>1</Version><Sender></Sender><SubSender>Simple Simon 957</SubSender><InterchangeDate>20161024</InterchangeDate><InterchangeTime>1606</InterchangeTime>
+<Message><MessageType>MEDRPT</MessageType><DocumentType>999</DocumentType><SendTime>201610241606</SendTime>
+<PersonID></PersonID><LID>162 13242</LID><RID>162 13242</RID><SS_LOT>P161M </SS_LOT><CODE_LOT>Q432X</CODE_LOT><LMCID>7927</LMCID><RequestorId>SS957</RequestorId>
+<ReportCommentary>
+
+Läsar ID:      957
+LID/RID:       162 13242
+Analys nummer: 11
+Datum:         20161024 1606
+Operatör:         
+
+Plasma-INR:             1.04
+
+EVF:           0.0
+Tid:           36.6
+Temperatur:    24.2
+
+</ReportCommentary>
+<Group><CollectionDate>20161024</CollectionDate><CollectionTime>1606</CollectionTime><Test>
+<Result>1.04</Result><SpecimenSource>PLAS</SpecimenSource><Pathological>0</Pathological><TestID>NPU01685</TestID><TestDescription>P-PK (INR)</TestDescription><TestCommentary>Referensområde obehandlade patienter &lt;1,2. Terapeutiskt område 2,0 - 3,0 vid AK-behandling.</TestCommentary></Test></Group>
+</Message></Interchange>

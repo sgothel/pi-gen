@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="ISO-8859-1"?><Interchange><Version>1</Version><Sender></Sender><SubSender>CYBOW 8A  </SubSender><InterchangeDate>20180920</InterchangeDate><InterchangeTime>1113</InterchangeTime>
+<Message><MessageType>MEDRPT</MessageType><DocumentType>999</DocumentType><SendTime>201809201113</SendTime>
+<PersonID></PersonID><LID>LowControl &gt;5mm</LID><RID>LowControl &gt;5mm</RID><REAGENT_LOT>D1.02 180123</REAGENT_LOT><CODE_LOT>S113X</CODE_LOT><USER_ID>FRWE</USER_ID><LMCID>DUR1</LMCID><RequestorId>D2118099   </RequestorId>
+<ReportCommentary>
+
+</ReportCommentary>
+<Group><CollectionDate>20180920</CollectionDate><CollectionTime>1113</CollectionTime><Test>
+<Result>0</Result><Unit>&#8260;uL</Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>798-9</LOINC></Test></Group>
+<Group><CollectionDate>20180920</CollectionDate><CollectionTime>1113</CollectionTime><Test>
+<Result>0</Result><Unit>mmol&#8260;L</Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>50557-8</LOINC></Test></Group>
+<Group><CollectionDate>20180920</CollectionDate><CollectionTime>1113</CollectionTime><Test>
+<Result>5</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>50560-2</LOINC></Test></Group>
+<Group><CollectionDate>20180920</CollectionDate><CollectionTime>1113</CollectionTime><Test>
+<Result>0</Result><Unit>mmol&#8260;L</Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>53328-1</LOINC></Test></Group>
+<Group><CollectionDate>20180920</CollectionDate><CollectionTime>1113</CollectionTime><Test>
+<Result>0</Result><Unit>g&#8260;L</Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>50561-0</LOINC></Test></Group>
+<Group><CollectionDate>20180920</CollectionDate><CollectionTime>1113</CollectionTime><Test>
+<Result>0</Result><Unit></Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>50558-6</LOINC></Test></Group>
+<Group><CollectionDate>20180920</CollectionDate><CollectionTime>1113</CollectionTime><Test>
+<Result>0</Result><Unit>&#8260;uL</Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>51487-7</LOINC></Test></Group>
+<Group><CollectionDate>20180920</CollectionDate><CollectionTime>1113</CollectionTime><Test>
+<Result>0</Result><Unit>mmol&#8260;L</Unit><SpecimenSource>UR</SpecimenSource><Pathological>0</Pathological><LOINC>16408-7</LOINC></Test></Group>
+
+</Message></Interchange>

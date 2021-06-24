@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="ISO-8859-1"?><Interchange><Version>1</Version><Sender></Sender><SubSender>ZAF101-1</SubSender><InterchangeDate>20180424</InterchangeDate><InterchangeTime>1321</InterchangeTime>
+<Message><MessageType>MEDRPT</MessageType><DocumentType>999</DocumentType><SendTime>201804241321</SendTime>
+<PersonID></PersonID><LID>7203060699</LID><RID>7203060699</RID><REAGENT_LOT>P161M1</REAGENT_LOT><CODE_LOT>S113X</CODE_LOT><USER_ID></USER_ID><LMCID>256</LMCID><RequestorId>SS256</RequestorId>
+<ReportCommentary>
+
+Läsar ID:      256
+LID/RID:       7203060699
+Analys nummer: 60
+Datum:         20180424 1321
+Operatör:         
+
+Plasma-INR:             2.62
+
+EVF:           0.0
+Tid:           74.7
+Temperatur:    23.6
+
+</ReportCommentary>
+<Group><CollectionDate>20180424</CollectionDate><CollectionTime>1321</CollectionTime><Test>
+<Result>2.62</Result><SpecimenSource>PLAS</SpecimenSource><Pathological>0</Pathological><TestID>NPU01685</TestID><TestDescription>P-PK (INR)</TestDescription><TestCommentary>Referensområde obehandlade patienter &lt;1,2. Terapeutiskt område 2,0 - 3,0 vid AK-behandling.</TestCommentary></Test></Group>
+</Message></Interchange>
