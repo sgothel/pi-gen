@@ -1,0 +1,1 @@
+ACTION=="add",KERNEL=="*lp*",SYMLINK+="usb/lp0"

@@ -1,0 +1,5 @@
+KERNEL=="hidraw*", MODE="0777"
+KERNEL=="usbdev*", MODE="0777"
+KERNEL=="usbmon*", MODE="0777"
+KERNEL=="hiddev*", MODE="0777"
+

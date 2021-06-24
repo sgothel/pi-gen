@@ -1,0 +1,4 @@
+ACTION=="add",SUBSYSTEM=="tty",ATTRS{idVendor}=="067b",ATTRS{idProduct}=="2303",SYMLINK+="ttyPROLIFIC067b2303"
+ACTION=="add",SUBSYSTEM=="tty",ATTRS{idVendor}=="0557",ATTRS{idProduct}=="2008",SYMLINK+="ttyPROLIFIC05572008"
+ACTION=="add",SUBSYSTEM=="tty",ATTRS{idVendor}=="0403",ATTRS{idProduct}=="6001",SYMLINK+="ttyFTDI04036001"
+ACTION=="add",SYBSYSTEM=="tty",ATTRS{idVendor}=="110a",ATTRS{idProduct}=="1110",SYMLINK+="ttyMOXA110a1110"

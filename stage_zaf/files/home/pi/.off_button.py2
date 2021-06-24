@@ -1,0 +1,20 @@
+#!/bin/python
+
+import RPi.GPIO as GPIO
+import os
+import time
+
+gpio_pin_number=3
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(26, GPIO.OUT)
+GPIO.output(26, GPIO.HIGH)
+GPIO.setup(gpio_pin_number, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+def off_callback(channel):
+	os.system("shutdown -h now")
+
+GPIO.add_event_detect(gpio_pin_number, GPIO.FALLING, callback=off_callback, bouncetime=200)
+while 1:
+       	time.sleep(0.01)
+
+GPIO.cleanup()
