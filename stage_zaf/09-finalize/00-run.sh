@@ -11,8 +11,9 @@ cp -av ../files/home/pi/splash.png "${ROOTFS_DIR}/usr/share/plymouth/themes/pix/
 
 cat ../files/home/pi/.bashrc_startx >> "${ROOTFS_DIR}/home/pi/.bashrc"
 
-rm -fv /etc/systemd/system/dbus-org.bluez.service
-rm -fv /etc/systemd/system/bluetooth.target.wants/bluetooth.service
+rm -fv "${ROOTFS_DIR}/etc/systemd/system/dbus-org.bluez.service"
+rm -fv "${ROOTFS_DIR}/etc/systemd/system/bluetooth.target.wants/bluetooth.service"
 # systemctl mask bluetooth
-ln -s /dev/null /etc/systemd/system/bluetooth.service
+rm -fv "${ROOTFS_DIR}/etc/systemd/system/bluetooth.service"
+ln -s /dev/null "${ROOTFS_DIR}/etc/systemd/system/bluetooth.service"
 
