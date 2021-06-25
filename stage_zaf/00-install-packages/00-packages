@@ -1,7 +1,5 @@
 libunwind8
-libcurl4
-openjdk-11-jdk openjdk-11-jre
-openjfx
+libcurl4 libcurl4-gnutls-dev
 fonts-nanum
 libopenal1
 ser2net
