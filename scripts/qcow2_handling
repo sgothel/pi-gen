@@ -263,6 +263,7 @@ function make_bootable_image() {
 		sed -i "s/DATADEV/PARTUUID=${DATA_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
 		sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
 		sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/boot/cmdline.txt"
+		sed -i "s/DATADEV/PARTUUID=${DATA_PARTUUID}/" "${MOUNTROOT}/etc/init.d/overlay_mount"
 	fi
 
 	echo "Umount image"

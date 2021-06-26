@@ -1,0 +1,28 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          overlay_mount
+# Required-Start:
+# Required-Stop:
+# Default-Start: 3
+# Default-Stop:
+# Short-Description: Overlay the root filesystem with rw folder
+# Description:
+### END INIT INFO
+. /lib/lsb/init-functions
+case "$1" in
+  start)
+    log_daemon_msg "Starting overlay_mount"
+    /bin/mount -t ext4 DATADEV -odefaults,noatime /data &&
+    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/etc,upperdir=/data/etc/upper,workdir=/data/etc/work /etc &&
+    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/home,upperdir=/data/home/upper,workdir=/data/home/work /home &&
+    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/srv,upperdir=/data/srv/upper,workdir=/data/srv/work /srv &&
+    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/tmp,upperdir=/data/tmp/upper,workdir=/data/tmp/work /tmp &&
+    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/var,upperdir=/data/var/upper,workdir=/data/var/work /var &&
+    log_end_msg $?
+    ;;
+  *)
+    echo "Usage: $0 start" >&2
+    exit 3
+    ;;
+esac
+

@@ -1,5 +1,8 @@
 #!/bin/bash -e
 
+install -m 644 files/overlay_mount.service	"${ROOTFS_DIR}/lib/systemd/system/"
+install -m 755 files/overlay_mount	        "${ROOTFS_DIR}/etc/init.d/"
+
 install -m 755 files/resize2fs_once	"${ROOTFS_DIR}/etc/init.d/"
 
 install -d				"${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d"
@@ -40,12 +43,16 @@ if [ "${USE_QEMU}" = "1" ]; then
 	install -m 644 files/90-qemu.rules "${ROOTFS_DIR}/etc/udev/rules.d/"
 	on_chroot << EOF
 systemctl disable resize2fs_once
+systemctl enable overlay_mount
 EOF
 	echo "leaving QEMU mode"
 else
 	on_chroot << EOF
-systemctl enable resize2fs_once
+#systemctl enable resize2fs_once
+systemctl disable resize2fs_once
+systemctl enable overlay_mount
 EOF
+	echo "leaving normal mode"
 fi
 
 on_chroot <<EOF

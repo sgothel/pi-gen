@@ -1,4 +1,13 @@
 proc            /proc           proc    defaults          0       0
 BOOTDEV  /boot           vfat    defaults          0       2
-DATADEV  /data           ext4    defaults,noatime  0       1
-ROOTDEV  /               ext4    defaults,noatime,ro,errors=remount-ro  0       1
+DATADEV  /data           ext4    defaults,noatime,noauto  0       1
+ROOTDEV  /               ext4    defaults,noatime,ro,errors=remount-ro  0       0
+
+# defaults = rw, suid, dev, exec, auto, nouser, and async
+# we replace auto -> noauto,x-systemd.automount
+#overlay  /etc            overlay noauto,x-systemd.automount,rw,suid,dev,exec,nouser,async,noatime,lowerdir=/etc,upperdir=/data/etc/upper,workdir=/data/etc/work 0 0
+#overlay  /home           overlay noauto,x-systemd.automount,rw,suid,dev,exec,nouser,async,noatime,lowerdir=/home,upperdir=/data/home/upper,workdir=/data/home/work 0 0
+#overlay  /srv            overlay noauto,x-systemd.automount,rw,suid,dev,exec,nouser,async,noatime,lowerdir=/srv,upperdir=/data/srv/upper,workdir=/data/srv/work 0 0
+#overlay  /tmp            overlay noauto,x-systemd.automount,rw,suid,dev,exec,nouser,async,noatime,lowerdir=/tmp,upperdir=/data/tmp/upper,workdir=/data/tmp/work 0 0
+#overlay  /var            overlay noauto,x-systemd.automount,rw,suid,dev,exec,nouser,async,noatime,lowerdir=/var,upperdir=/data/var/upper,workdir=/data/var/work 0 0
+

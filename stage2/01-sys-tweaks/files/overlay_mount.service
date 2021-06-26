@@ -1,0 +1,13 @@
+[Unit]
+Description=OverlayFS mount service
+DefaultDependencies=no
+Before=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/etc/init.d/overlay_mount start
+
+[Install]
+WantedBy=local-fs.target
+Alias=overlay_mount.service
+
