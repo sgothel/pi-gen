@@ -15,6 +15,14 @@ mkdir -p /data/tmp/upper
 mkdir -p /data/tmp/work
 mkdir -p /data/var/upper
 mkdir -p /data/var/work
+
+# Memory ~1G -> Swap 2G; BUT slow and small sd-card 
+# Use 200MB (Raspberry comes with 100MB default)
+rm -f /data/swapfile
+dd if=/dev/zero of=/data/swapfile bs=1M count=200
+mkswap /data/swapfile
+chmod 600 /data/swapfile
+
 if ! id -u ${FIRST_USER_NAME} >/dev/null 2>&1; then
 	adduser --disabled-password --gecos "" ${FIRST_USER_NAME}
 fi

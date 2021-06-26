@@ -15,7 +15,7 @@ fake-hwclock nfs-common usbutils
 #libraspberrypi-dev libraspberrypi-doc libfreetype6-dev
 libraspberrypi-dev libfreetype6-dev
 dosfstools
-dphys-swapfile
+#dphys-swapfile
 raspberrypi-sys-mods
 pi-bluetooth
 apt-listchanges
