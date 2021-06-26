@@ -1,3 +1,15 @@
+8 GB SD Image-A (intermediate):
+* boot 250MB (rw, vfat)
+* data 1GB (rw, ext4): fixed size, [overlayfs](https://www.kernel.org/doc/html/latest/filesystems/overlayfs.html?highlight=overlayfs) data [/etc /home /srv /tmp /var]
+* rootfs 3.0GB (ext4, no-journal, read-only)
+
+16GB SD Image-B (final):
+* boot 250MB (rw, vfat): just boot
+* data 1GB (rw, ext4): fixed size, [overlayfs](https://www.kernel.org/doc/html/latest/filesystems/overlayfs.html?highlight=overlayfs) data [/etc /home /srv /tmp /var]
+* system 14GB (rw, vfat): app-data, app-image [current, old], rootfs-image [current, old]
+
++++
+
 The `block` filesystems:
 ```
 /dev/mmcblk0p3 on / type ext4 (ro,noatime,errors=remount-ro)
