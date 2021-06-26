@@ -11,7 +11,9 @@ avahi-daemon
 lua5.1
 luajit
 hardlink ca-certificates curl
-fake-hwclock nfs-common usbutils
+fake-hwclock
+#nfs-common
+usbutils
 #libraspberrypi-dev libraspberrypi-doc libfreetype6-dev
 libraspberrypi-dev libfreetype6-dev
 dosfstools
