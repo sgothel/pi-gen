@@ -1,19 +1,31 @@
-#!/bin/sh -e
+#!/bin/bash -e
 
 # disabled for now
 # tar -zxvf files/zafena.tar.gz -C "${ROOTFS_DIR}/"
 
-cp -av ../files/*            "${ROOTFS_DIR}/"
-cp -av ../files.elevator/*   "${ROOTFS_DIR}/"
-cp -av ../files.zafena_app/* "${ROOTFS_DIR}/"
+PRESERVE_ROOT="timestamps,mode,links"
 
-cp -av ../files/home/pi/splash.png "${ROOTFS_DIR}/usr/share/plymouth/themes/pix/splash.png"
+chown -R root:root ../files.etc
+chown -R 1000:1000 ../files.home
+chown -R root:root ../files.elevator
 
-cat ../files/home/pi/.bashrc_startx >> "${ROOTFS_DIR}/home/pi/.bashrc"
+/bin/cp -dR --preserve=$PRESERVE_ROOT ../files.etc/*        "${ROOTFS_DIR}/etc/"
+/bin/cp -dR --preserve=$PRESERVE_ROOT ../files.home/*       "${ROOTFS_DIR}/home/"
+/bin/cp -dR --preserve=$PRESERVE_ROOT ../files.elevator/*   "${ROOTFS_DIR}/"
+/usr/bin/install -o 0 -g 0 -p ../files.home/pi/splash.png   "${ROOTFS_DIR}/usr/share/plymouth/themes/pix/"
 
-rm -fv "${ROOTFS_DIR}/etc/systemd/system/dbus-org.bluez.service"
-rm -fv "${ROOTFS_DIR}/etc/systemd/system/bluetooth.target.wants/bluetooth.service"
-# systemctl mask bluetooth
-rm -fv "${ROOTFS_DIR}/etc/systemd/system/bluetooth.service"
-ln -s /dev/null "${ROOTFS_DIR}/etc/systemd/system/bluetooth.service"
+/bin/cp -dR --preserve=timestamps     ../files.boot/*       "${ROOTFS_DIR}/boot/"
 
+mkdir -p                                                    "${ROOTFS_DIR}/boot/zafena"
+/bin/cp -dR --preserve=timestamps     ../files.zafena_app/* "${ROOTFS_DIR}/boot/zafena/"
+
+cat ../files.home/pi/.bashrc_startx                      >> "${ROOTFS_DIR}/home/pi/.bashrc"
+
+on_chroot << EOF
+systemctl disable bluetooth
+systemctl mask bluetooth
+cd /home/pi 
+rm -f data .xsession
+ln -s /boot/zafena data
+ln -s .xinitrc .xsession
+EOF
