@@ -1,12 +1,11 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          overlay_mount
-# Required-Start:
-# Required-Stop:
-# Default-Start: 3
-# Default-Stop:
-# Short-Description: Overlay the root filesystem with rw folder
-# Description:
+# Required-Start:    mountkernfs
+# Required-Stop:     umountroot
+# Default-Start:     S
+# Default-Stop:      0 6
+# Short-Description: Overlay the root filesystem with read-write folder
 ### END INIT INFO
 . /lib/lsb/init-functions
 case "$1" in

@@ -1,7 +1,7 @@
 proc            /proc           proc    defaults          0       0
 
 BOOTDEV  /boot           vfat    defaults          0       2
-DATADEV  /data           ext4    defaults,noatime,noauto  0       1
+DATADEV  /data           ext4    rw,suid,dev,exec,nouser,async,noatime,noauto  0       1
 ROOTDEV  /               ext4    defaults,noatime,ro,errors=remount-ro  0       0
 
 /data/swapfile  none     swap    defaults                 0       0
