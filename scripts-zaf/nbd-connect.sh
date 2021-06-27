@@ -20,7 +20,7 @@ init_nbd() {
 			MAP_BOOT_DEV=/dev/mapper/$(basename $x)p1
 			MAP_DATA_DEV=/dev/mapper/$(basename $x)p2
 			MAP_ROOT_DEV=/dev/mapper/$(basename $x)p3
-            echo Use NBD Device $NBDDEV
+            echo Use NBD Device $NBD_DEV
             echo Use MAP_BOOT_DEV $MAP_BOOT_DEV
             echo Use MAP_DATA_DEV $MAP_DATA_DEV
             echo Use MAP_ROOT_DEV $MAP_ROOT_DEV
