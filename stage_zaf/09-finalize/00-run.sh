@@ -24,6 +24,11 @@ cat ../files.home/pi/.bashrc_startx                      >> "${ROOTFS_DIR}/home/
 on_chroot << EOF
 systemctl disable bluetooth
 systemctl mask bluetooth
+
+cd /etc/default
+rm -f ntpdate
+ln -s /boot/ntpdate .
+
 cd /home/pi 
 rm -f data .xsession
 ln -s /boot/zafena data
