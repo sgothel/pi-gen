@@ -88,7 +88,8 @@ enable_uart=1
 core_freq=250
 
 arm_64bit=1
-gpu_mem=128
+#gpu_mem=128
+gpu_mem=64
 
 [pi4]
 # Enable DRM VC4 V3D driver on top of the dispmanx display stack
