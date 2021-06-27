@@ -8,8 +8,11 @@ export RELEASE=buster
 
 export APT_PROXY=http://jordan:3142
 
-export IMG_NAME='zafcon0002'
-export WORK_DIR=/data/zafcon_arm64_0002-work
+# ZAFENA_VERSION: major-version . minor.version - client . client-build
+export ZAFENA_VERSION='1.0-0.5'
+
+export IMG_NAME="zafcon-$ZAFENA_VERSION"
+export WORK_DIR="/data/zafcon_arm64_$ZAFENA_VERSION-work"
 
 export DEPLOY_DIR=/data/diskimages
 export DEPLOY_ZIP=0
