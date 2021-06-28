@@ -47,7 +47,7 @@ The following environment variables are supported:
 
     <u>Additional optional parameters regarding qcow2 build:</u>
 
-    * `BASE_QCOW2_SIZE` (Default: 12G)
+    * `BASE_QCOW2_SIZE` (Default: 16G)
 
         Size of the virtual qcow2 disk.
         Note: it will not actually use that much of space at once but defines the

@@ -108,5 +108,5 @@ source scripts/qcow2_handling
 if [ "${MOUNT}" = "1" ]; then
 	mount_qimage "${MOUNTPOINT}" "${IMAGE}"
 elif [ "${UMOUNT}" = "1" ]; then
-	umount_qimage "${MOUNTPOINT}"
+	umount_image "${MOUNTPOINT}"
 fi
