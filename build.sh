@@ -245,7 +245,7 @@ source "${SCRIPT_DIR}/dependencies_check"
 # merely a local flag for `run_stage` for EXPORT_DIRS (images) only
 export USE_QCOW2=1
 
-export BASE_QCOW2_SIZE=${BASE_QCOW2_SIZE:-16G}
+export BASE_QCOW2_SIZE=${BASE_QCOW2_SIZE:-15200M}
 source "${SCRIPT_DIR}/qcow2_handling"
 
 dependencies_check "${BASE_DIR}/depends"

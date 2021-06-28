@@ -53,14 +53,24 @@ The following environment variables are supported:
    but you should use something else for a customized version.  Export files
    in stages may add suffixes to `IMG_NAME`.
 
-* `BASE_QCOW2_SIZE` (Default: 16G)
+* `BASE_QCOW2_SIZE` (Default: 15200M)
 
-   Size of the virtual qcow2 disk.
+   Size of the virtual qcow2 disk given in multiples of 1024, i.e. KiB, MiB or GiB.
    Note: it will not actually use that much of space at once but defines the
    maximum size of the virtual disk. If you change the build process by adding
    a lot of bigger packages or additional build stages, it can be necessary to
    increase the value because the virtual disk can run out of space like a normal
    hard drive would.
+
+   Example: 16 GB sdcard:
+   ```
+    15962472448 B
+    15588352 KiB
+    15223 MiB
+    14.866 GiB
+
+    Safe: 15200 MiB
+   ```
 
 * `RELEASE` (Default: buster)
 

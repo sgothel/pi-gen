@@ -1,12 +1,27 @@
-8 GB SD Image-A (intermediate):
-* boot 250MB (rw, vfat)
-* data 1GB (rw, ext4): fixed size, [overlayfs](https://www.kernel.org/doc/html/latest/filesystems/overlayfs.html?highlight=overlayfs) data [/etc /home /srv /tmp /var]
-* rootfs 3.0GB (ext4, no-journal, read-only)
+Example: 16 GB sdcard:
+```
+    15962472448 B
+    15588352 KiB
+    15223 MiB
+    14.866 GiB
 
-16GB SD Image-B (final):
-* boot 250MB (rw, vfat): just boot
-* data 1GB (rw, ext4): fixed size, [overlayfs](https://www.kernel.org/doc/html/latest/filesystems/overlayfs.html?highlight=overlayfs) data [/etc /home /srv /tmp /var]
-* system 14GB (rw, vfat): app-data, app-image [current, old], rootfs-image [current, old]
+    Safe: 15200 MiB
+```
+
+**16 GB SD Image-B (15223 MiB, no indirection, direct block access):**
+* x: mbr     4 MiB
+* 1: boot 6100 MiB (rw, vfat): boot, app-data, app-image [current, old]
+* 2: data 1000 MiB (rw, ext4): fixed size, [overlayfs](https://www.kernel.org/doc/html/latest/filesystems/overlayfs.html?highlight=overlayfs) data [/etc /home /srv /tmp /var]
+* 3: rootfs-1 4000 MiB (ext4 or squashfs, no-journal, read-only) [current or old]
+* 4: rootfs-2 4000 MiB (ext4 or squashfs, no-journal, read-only) [current or old]
+* x: unused 96 MiB (actually 96 MiB + 23 MiB = 119 MiB)
+
+Layout *Image-C* is on hold:
+
+16 GB SD Image-C (final) (requires slower block access via underlying filesystem (loopfs), initramfs or other bootloader):
+* boot 250 MB (rw, vfat): just boot
+* data 1 GB (rw, ext4): fixed size, [overlayfs](https://www.kernel.org/doc/html/latest/filesystems/overlayfs.html?highlight=overlayfs) data [/etc /home /srv /tmp /var]
+* system 14 GB (rw, vfat): app-data, app-image [current, old], rootfs-image [current, old]
 
 +++
 

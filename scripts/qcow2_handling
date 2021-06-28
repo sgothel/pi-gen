@@ -136,12 +136,12 @@ load_qimage() {
 				sync
 				qemu-nbd --discard=unmap -c $NBD_DEV image-${STAGE}.qcow2
 				sync
-                # 1 boot, 2 data, 3 rootfs1, 4 rootfs2
+                # 1 boot (6100 MiB), 2 data (1000 MiB), 3 rootfs1 (4000 MiB), 4 rootfs2 (4000 MiB)
 				sfdisk $NBD_DEV << EOF
-4MiB,7000MiB,c,*
-7004MiB,1000MiB,83
-8008MiB,4000MiB,83
-12012MiB,4000MiB,83;
+4MiB,6100MiB,c,*
+6104MiB,1000MiB,83
+7104MiB,4000MiB,83
+11104MiB,4000MiB,83;
 EOF
 				sync
 				kpartx -a $NBD_DEV
@@ -230,8 +230,10 @@ function resize_qcow2() {
 	#ACT2=`parted -s "$NBD_DEV" unit B mkpart primary $PART_START $PART_NEW_END`
 	#NEW_IMG_SIZE=`parted -s -m "$NBD_DEV" unit B print free | tail -1 | awk -F: ' { print substr($2,1,length($2)-1) } '`
 	NEW_IMG_SIZE=$PART_NEW_END
-    NEW_ROOT1_PART_START=$PART_START
-    NEW_ROOT1_PART_SIZE=$PART_NEW_SIZE
+    ROOT1_PART_START=$PART_START
+    ROOT1_PART_SIZE_BYTES=$PART_NEW_SIZE
+    ROOT1_PART_BLOCK_SIZE=$BLOCK_SIZE
+    ROOT1_PART_BLOCK_COUNT=$DATA_SIZE
 }
 export -f resize_qcow2
 
@@ -242,19 +244,31 @@ function write_partitions_qcow2() {
 	fi
     local map_dev
     local block_size
+    local block_count
     local img_file
     local inf_file
+    local byte_size
     map_dev=$1
     block_size=$2
-    img_file=$3
-    inf_file=$4
+    block_count=$3
+    img_file=$4
+    inf_file=$5
 
-    # 1 boot (512), 2 data (4096), 3 rootfs1 (4096), 4 rootfs2 (4096)
+    # typical block sizes:
+    #   1 boot (512), 2 data (4096), 3 rootfs1 (4096), 4 rootfs2 (4096)
     #
-    echo "Blocksize $block_size" >> $inf_file
+    if [ "$block_count" = "0" ] ; then
+        # copy whole partition
+        echo "Copy partition image $map_dev -> image $img_file with blocksize $block_size" | tee -a $inf_file
+        dd if=$map_dev of=$img_file bs=$block_size 2>&1 | tee -a $inf_file
+    else
+        # copy block_count blocks only (smaller filesystem on bigger partition for rootfs)
+        let byte_size=$block_count*$block_size
+        echo "Size $byte_size B = $block_size B/block * $block_count blocks" >> $inf_file
 
-    echo "Copy partition image $map_dev -> image $img_file with blocksize $block_size" | tee -a $inf_file
-    dd if=$map_dev of=$img_file bs=$block_size 2>&1 | tee -a $inf_file
+        echo "Copy partition image $map_dev -> image $img_file with $block_count x blocksize $block_size" | tee -a $inf_file
+        dd if=$map_dev of=$img_file bs=$block_size count=$block_count 2>&1 | tee -a $inf_file
+    fi
 }
 export -f write_partitions_qcow2
 
@@ -335,9 +349,9 @@ function make_bootable_image() {
 	CALL_FROM_MBI=1
     # 1 boot (512), 2 data (4096), 3 rootfs1 (4096), 4 rootfs2 (4096)
 	echo "Extract partitions to raw image"
-	write_partitions_qcow2 $MAP_ROOT_DEV $(e2fs_block_size $MAP_ROOT_DEV) $EXPORT_IMAGE_ROOT $EXPORT_INFO_ROOT
-	#write_partitions_qcow2 $MAP_BOOT_DEV 512                              $EXPORT_IMAGE_BOOT $EXPORT_INFO_BOOT
-	#write_partitions_qcow2 $MAP_DATA_DEV $(e2fs_block_size $MAP_DATA_DEV) $EXPORT_IMAGE_DATA $EXPORT_INFO_DATA
+	write_partitions_qcow2 $MAP_ROOT_DEV  $ROOT1_PART_BLOCK_SIZE $ROOT1_PART_BLOCK_COUNT $EXPORT_IMAGE_ROOT $EXPORT_INFO_ROOT
+	#write_partitions_qcow2 $MAP_BOOT_DEV 512                    0                       $EXPORT_IMAGE_BOOT $EXPORT_INFO_BOOT
+	#write_partitions_qcow2 $MAP_DATA_DEV $(e2fs_block_size $MAP_DATA_DEV) 0             $EXPORT_IMAGE_DATA $EXPORT_INFO_DATA
 	sync
 	CALL_FROM_MBI=
     
