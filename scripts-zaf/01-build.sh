@@ -3,16 +3,20 @@
 sdir=`dirname $(readlink -f $0)`
 rootdir=`dirname $sdir`
 
+export PI_GEN="pi-gen (Zafena branch)"
+export PI_GEN_REPO="http://kontorsserver.zafena.se/sgothel/pi-gen"
+
 # export RELEASE=bullseye
 export RELEASE=buster
 
 export APT_PROXY=http://jordan:3142
 
 # ZAFENA_VERSION: major-version . minor.version - client . client-build
-export ZAFENA_VERSION='1.0-0.5'
+export ZAFENA_VERSION='1.1-0.6'
 
-export IMG_NAME="zafcon-$ZAFENA_VERSION"
-export WORK_DIR="/data/zafcon_arm64_$ZAFENA_VERSION-work"
+export IMG_NAME="zafcon-${ZAFENA_VERSION}"
+export WORK_DIR="/data/zafcon_arm64_${ZAFENA_VERSION}-work"
+export IMG_FILENAME=${IMG_NAME}
 
 export DEPLOY_DIR=/data/diskimages
 export DEPLOY_ZIP=0
