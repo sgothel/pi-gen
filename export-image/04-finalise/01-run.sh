@@ -3,6 +3,13 @@
 IMG_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
 INFO_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.info"
 
+IMG_FILE_ROOT="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root.img"
+INFO_FILE_ROOT="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root.info"
+#IMG_FILE_BOOT="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.boot.img"
+#INFO_FILE_BOOT="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.boot.info"
+#IMG_FILE_DATA="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.data.img"
+#INFO_FILE_DATA="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.data.info"
+
 on_chroot << EOF
 if [ -x /etc/init.d/fake-hwclock ]; then
 	/etc/init.d/fake-hwclock stop
@@ -57,6 +64,9 @@ install -m 644 "${ROOTFS_DIR}/etc/rpi-issue" "${ROOTFS_DIR}/boot/issue.txt"
 
 cp "$ROOTFS_DIR/etc/rpi-issue" "$INFO_FILE"
 
+cp "$INFO_FILE" "$INFO_FILE_ROOT"
+#cp "$INFO_FILE" "$INFO_FILE_BOOT"
+#cp "$INFO_FILE" "$INFO_FILE_DATA"
 
 {
 	if [ -f "$ROOTFS_DIR/usr/share/doc/raspberrypi-kernel/changelog.Debian.gz" ]; then
@@ -78,10 +88,10 @@ cp "$ROOTFS_DIR/etc/rpi-issue" "$INFO_FILE"
 
 mkdir -p "${DEPLOY_DIR}"
 
-rm -f "${DEPLOY_DIR}/${ZIP_FILENAME}${IMG_SUFFIX}.zip"
-rm -f "${DEPLOY_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
-
-mv "$INFO_FILE" "$DEPLOY_DIR/"
+rm -f "${DEPLOY_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.{img,img.gz,.info}"
+rm -f "${DEPLOY_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root.{img,img.gz,.info}"
+rm -f "${DEPLOY_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.boot.{img,img.gz,.info}"
+rm -f "${DEPLOY_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.data.{img,img.gz,.info}"
 
 if [ "${USE_QCOW2}" = "0" ] && [ "${NO_PRERUN_QCOW2}" = "0" ]; then
 	ROOT_DEV="$(mount | grep "${ROOTFS_DIR} " | cut -f1 -d' ')"
@@ -92,14 +102,30 @@ if [ "${USE_QCOW2}" = "0" ] && [ "${NO_PRERUN_QCOW2}" = "0" ]; then
 	unmount_image "${IMG_FILE}"
 else
 	unload_qimage
-	make_bootable_image "${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.qcow2" "$IMG_FILE"
+	make_bootable_image "${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.qcow2" \
+        "$IMG_FILE" \
+        "$IMG_FILE_ROOT" "$INFO_FILE_ROOT"
+
+#        "$IMG_FILE_BOOT" "$INFO_FILE_BOOT" \
+#        "$IMG_FILE_DATA" "$INFO_FILE_DATA"
+
 fi
 
+mv "$INFO_FILE" "$INFO_FILE_ROOT" "$DEPLOY_DIR/"
+#mv "$INFO_FILE" "$INFO_FILE_ROOT" "$INFO_FILE_BOOT" "$INFO_FILE_DATA" "$DEPLOY_DIR/"
+
 if [ "${DEPLOY_ZIP}" == "1" ]; then
-	pushd "${STAGE_WORK_DIR}" > /dev/null
-	zip "${DEPLOY_DIR}/${ZIP_FILENAME}${IMG_SUFFIX}.zip" \
-		"$(basename "${IMG_FILE}")"
-	popd > /dev/null
-else
-	mv "$IMG_FILE" "$DEPLOY_DIR/"
+	gzip -k "$IMG_FILE"
+	gzip -k "$IMG_FILE_ROOT"
+	#gzip -k "$IMG_FILE_BOOT"
+	#gzip -k "$IMG_FILE_DATA"
+    mv "$IMG_FILE".gz      "$DEPLOY_DIR/"
+    mv "$IMG_FILE_ROOT".gz "$DEPLOY_DIR/"
+    #mv "$IMG_FILE_BOOT".gz "$DEPLOY_DIR/"
+    #mv "$IMG_FILE_DATA".gz "$DEPLOY_DIR/"
 fi
+
+mv "$IMG_FILE"      "$DEPLOY_DIR/"
+mv "$IMG_FILE_ROOT" "$DEPLOY_DIR/"
+#mv "$IMG_FILE_BOOT" "$DEPLOY_DIR/"
+#mv "$IMG_FILE_DATA" "$DEPLOY_DIR/"

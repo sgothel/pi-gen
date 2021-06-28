@@ -235,11 +235,40 @@ function resize_qcow2() {
 }
 export -f resize_qcow2
 
+function write_partitions_qcow2() {
+	if [ -z "$CALL_FROM_MBI" ]; then
+		echo "write_partitions_qcow2: cannot be called directly, use make_bootable_image instead"
+		return 1
+	fi
+    local map_dev
+    local block_size
+    local img_file
+    local inf_file
+    map_dev=$1
+    block_size=$2
+    img_file=$3
+    inf_file=$4
+
+    # 1 boot (512), 2 data (4096), 3 rootfs1 (4096), 4 rootfs2 (4096)
+    #
+    echo "Blocksize $block_size" >> $inf_file
+
+    echo "Copy partition image $map_dev -> image $img_file with blocksize $block_size" | tee -a $inf_file
+    dd if=$map_dev of=$img_file bs=$block_size 2>&1 | tee -a $inf_file
+}
+export -f write_partitions_qcow2
+
 # create raw img from qcow2: make_bootable_image <in.qcow2> <out.img>
 function make_bootable_image() {
     
 	EXPORT_QCOW2="$1"
 	EXPORT_IMAGE="$2"
+	EXPORT_IMAGE_ROOT="$3"
+	EXPORT_INFO_ROOT="$4"
+	#EXPORT_IMAGE_BOOT="$5"
+	#EXPORT_INFO_BOOT="$6"
+	#EXPORT_IMAGE_DATA="$7"
+	#EXPORT_INFO_DATA="$8"
 
 	echo "Connect block device to source qcow2"
 	connect_blkdev "${EXPORT_QCOW2}"
@@ -300,6 +329,21 @@ function make_bootable_image() {
 	sync
     umount_image $MOUNTROOT
 
+	echo "Extracting partitions - Writing partitions from ${EXPORT_IMAGE}"
+	connect_raw_blkdev "${EXPORT_IMAGE}"
+    
+	CALL_FROM_MBI=1
+    # 1 boot (512), 2 data (4096), 3 rootfs1 (4096), 4 rootfs2 (4096)
+	echo "Extract partitions to raw image"
+	write_partitions_qcow2 $MAP_ROOT_DEV $(e2fs_block_size $MAP_ROOT_DEV) $EXPORT_IMAGE_ROOT $EXPORT_INFO_ROOT
+	#write_partitions_qcow2 $MAP_BOOT_DEV 512                              $EXPORT_IMAGE_BOOT $EXPORT_INFO_BOOT
+	#write_partitions_qcow2 $MAP_DATA_DEV $(e2fs_block_size $MAP_DATA_DEV) $EXPORT_IMAGE_DATA $EXPORT_INFO_DATA
+	sync
+	CALL_FROM_MBI=
+    
+	echo "Disconnect block device"
+	disconnect_blkdev
+    
 	echo "Remove qcow2 export image"
 	rm -f "${EXPORT_QCOW2}"
 }
