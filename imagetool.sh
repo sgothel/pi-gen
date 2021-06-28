@@ -19,6 +19,7 @@ Usage:
    arguments:
      -h, --help           show this help message and exit
      -c, --cleanup        cleanup orphaned device mappings
+     -C, --force-cleanup  forcefully cleanup orphaned or still connected device mappings
      -m, --mount          mount image
      -u, --umount         umount image
      -i, --image-name     path to qcow2 image
@@ -49,6 +50,22 @@ nbd_cleanup() {
 	fi
 }
 
+force_nbd_cleanup() {
+	DEVS="$(lsblk | grep nbd | grep disk | cut -d" " -f1)"
+	if [ ! -z "${DEVS}" ]; then
+		for d in $DEVS; do
+			if [ ! -z "${d}" ]; then
+				QDEV="$(ps xa | grep $d | grep -v grep)"
+				if [ -z "${QDEV}" ]; then
+					kpartx -d /dev/$d && echo "Unconnected device map removed: /dev/$d"
+                else
+					kpartx -d /dev/$d && echo "Connected device map removed (force): /dev/$d"
+				fi
+			fi
+		done
+	fi
+}
+
 # As long as there is at least one more argument, keep looping
 while [[ $# -gt 0 ]]; do
 	key="$1"
@@ -59,6 +76,9 @@ while [[ $# -gt 0 ]]; do
 		;;
 		-c|--cleanup)
 			nbd_cleanup
+		;;
+		-C|--force-cleanup)
+			force_nbd_cleanup
 		;;
 		-m|--mount)
 			MOUNT=1
