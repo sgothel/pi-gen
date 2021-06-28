@@ -22,6 +22,22 @@ The file `depends` contains a list of tools needed.  The format of this
 package is `<tool>[:<debian-package>]`.
 
 
+## Notes
+
+* Implementation uses qcow2
+
+    Instead of using traditional way of building the rootfs of every stage in
+    single subdirectories and copying over the previous one to the next one,
+    qcow2 based virtual disks with backing images are used in every stage.
+    This speeds up the build process and reduces overall space consumption
+    significantly.
+
+    <u>Optional parameters regarding qcow2 build: `BASE_QCOW2_SIZE`</u>
+
+    **CAUTION:**  Although the qcow2 build mechanism will run fine inside Docker, it can happen
+    that the network block device is not disconnected correctly after the Docker process has
+    ended abnormally. In that case see [Disconnect an image if something went wrong](#Disconnect-an-image-if-something-went-wrong)
+
 ## Config
 
 Upon execution, `build.sh` will source the file `config` in the current
@@ -37,28 +53,14 @@ The following environment variables are supported:
    but you should use something else for a customized version.  Export files
    in stages may add suffixes to `IMG_NAME`.
 
-* `USE_QCOW2`(Default: `1` )
+* `BASE_QCOW2_SIZE` (Default: 16G)
 
-    Instead of using traditional way of building the rootfs of every stage in
-    single subdirectories and copying over the previous one to the next one,
-    qcow2 based virtual disks with backing images are used in every stage.
-    This speeds up the build process and reduces overall space consumption
-    significantly.
-
-    <u>Additional optional parameters regarding qcow2 build:</u>
-
-    * `BASE_QCOW2_SIZE` (Default: 16G)
-
-        Size of the virtual qcow2 disk.
-        Note: it will not actually use that much of space at once but defines the
-        maximum size of the virtual disk. If you change the build process by adding
-        a lot of bigger packages or additional build stages, it can be necessary to
-        increase the value because the virtual disk can run out of space like a normal
-        hard drive would.
-
-    **CAUTION:**  Although the qcow2 build mechanism will run fine inside Docker, it can happen
-    that the network block device is not disconnected correctly after the Docker process has
-    ended abnormally. In that case see [Disconnect an image if something went wrong](#Disconnect-an-image-if-something-went-wrong)
+   Size of the virtual qcow2 disk.
+   Note: it will not actually use that much of space at once but defines the
+   maximum size of the virtual disk. If you change the build process by adding
+   a lot of bigger packages or additional build stages, it can be necessary to
+   increase the value because the virtual disk can run out of space like a normal
+   hard drive would.
 
 * `RELEASE` (Default: buster)
 

@@ -96,23 +96,14 @@ rm -f "${DEPLOY_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root.{img,img.gz,.info}"
 rm -f "${DEPLOY_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.boot.{img,img.gz,.info}"
 rm -f "${DEPLOY_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.data.{img,img.gz,.info}"
 
-if [ "${USE_QCOW2}" = "0" ] && [ "${NO_PRERUN_QCOW2}" = "0" ]; then
-	ROOT_DEV="$(mount | grep "${ROOTFS_DIR} " | cut -f1 -d' ')"
+unload_qimage
+make_bootable_image "${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.qcow2" \
+    "$IMG_FILE" \
+    "$IMG_FILE_ROOT" "$INFO_FILE_ROOT"
 
-	unmount "${ROOTFS_DIR}"
-	zerofree "${ROOT_DEV}"
+#    "$IMG_FILE_BOOT" "$INFO_FILE_BOOT" \
+#    "$IMG_FILE_DATA" "$INFO_FILE_DATA"
 
-	unmount_image "${IMG_FILE}"
-else
-	unload_qimage
-	make_bootable_image "${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.qcow2" \
-        "$IMG_FILE" \
-        "$IMG_FILE_ROOT" "$INFO_FILE_ROOT"
-
-#        "$IMG_FILE_BOOT" "$INFO_FILE_BOOT" \
-#        "$IMG_FILE_DATA" "$INFO_FILE_DATA"
-
-fi
 
 mv "$INFO_FILE" "$INFO_FILE_ROOT" "$DEPLOY_DIR/"
 #mv "$INFO_FILE" "$INFO_FILE_ROOT" "$INFO_FILE_BOOT" "$INFO_FILE_DATA" "$DEPLOY_DIR/"
