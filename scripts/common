@@ -98,7 +98,8 @@ on_chroot() {
 export -f on_chroot
 
 print_issue() {
-    echo "Raspberry Pi reference ${IMG_DATE} UTC"
+    echo "Raspberry Pi (Zafena) ${IMG_DATE} UTC"
+    echo "Zafena version ${ZAFENA_VERSION}"
     echo "Generated using ${PI_GEN}, ${PI_GEN_REPO}, ${GIT_HASH}, ${1}"
 
     if [ -f "$ROOTFS_DIR/usr/share/doc/raspberrypi-kernel/changelog.Debian.gz" ]; then
