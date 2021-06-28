@@ -59,7 +59,7 @@ find "${ROOTFS_DIR}/var/log/" -type f -exec cp /dev/null {} \;
 rm -f "${ROOTFS_DIR}/root/.vnc/private.key"
 rm -f "${ROOTFS_DIR}/etc/vnc/updateid"
 
-update_issue "$(basename "${EXPORT_DIR}")"
+print_issue "$(basename "${EXPORT_DIR}")" > "${ROOTFS_DIR}/etc/rpi-issue"
 install -m 644 "${ROOTFS_DIR}/etc/rpi-issue" "${ROOTFS_DIR}/boot/issue.txt"
 
 cp "$ROOTFS_DIR/etc/rpi-issue" "$INFO_FILE"
@@ -68,23 +68,26 @@ cp "$INFO_FILE" "$INFO_FILE_ROOT"
 #cp "$INFO_FILE" "$INFO_FILE_BOOT"
 #cp "$INFO_FILE" "$INFO_FILE_DATA"
 
-{
-	if [ -f "$ROOTFS_DIR/usr/share/doc/raspberrypi-kernel/changelog.Debian.gz" ]; then
-		firmware=$(zgrep "firmware as of" \
-			"$ROOTFS_DIR/usr/share/doc/raspberrypi-kernel/changelog.Debian.gz" | \
-			head -n1 | sed  -n 's|.* \([^ ]*\)$|\1|p')
-		printf "\nFirmware: https://github.com/raspberrypi/firmware/tree/%s\n" "$firmware"
+echo >> "$INFO_FILE_ROOT"
+echo "+++" >> "$INFO_FILE_ROOT"
+echo >> "$INFO_FILE_ROOT"
+echo "Root Partition `basename $IMG_FILE_ROOT`" >> "$INFO_FILE_ROOT"
+echo "Root Partition of `basename $IMG_FILE`" >> "$INFO_FILE_ROOT"
+echo >> "$INFO_FILE_ROOT"
 
-		kernel="$(curl -s -L "https://github.com/raspberrypi/firmware/raw/$firmware/extra/git_hash")"
-		printf "Kernel: https://github.com/raspberrypi/linux/tree/%s\n" "$kernel"
+#echo >> "$INFO_FILE_BOOT"
+#echo "+++" >> "$INFO_FILE_BOOT"
+#echo >> "$INFO_FILE_BOOT"
+#echo "Boot Partition `basename $IMG_FILE_BOOT`" >> "$INFO_FILE_BOOT"
+#echo "Boot Partition of `basename $IMG_FILE`" >> "$INFO_FILE_BOOT"
+#echo >> "$INFO_FILE_BOOT"
 
-		uname="$(curl -s -L "https://github.com/raspberrypi/firmware/raw/$firmware/extra/uname_string7")"
-		printf "Uname string: %s\n" "$uname"
-	fi
-
-	printf "\nPackages:\n"
-	dpkg -l --root "$ROOTFS_DIR"
-} >> "$INFO_FILE"
+#echo >> "$INFO_FILE_DATA"
+#echo "+++" >> "$INFO_FILE_DATA"
+#echo >> "$INFO_FILE_DATA"
+#echo "Data Partition `basename $IMG_FILE_DATA`" >> "$INFO_FILE_DATA"
+#echo "Data Partition of `basename $IMG_FILE`" >> "$INFO_FILE_DATA"
+#echo >> "$INFO_FILE_DATA"
 
 mkdir -p "${DEPLOY_DIR}"
 
