@@ -27,6 +27,10 @@ on_chroot << EOF
 systemctl disable bluetooth
 systemctl mask bluetooth
 
+echo "i2c-bcm2708" >> "${ROOTFS_DIR}/etc/modules"
+echo "#i2c-dev" >> "${ROOTFS_DIR}/etc/modules"
+echo "#rtc-ds1307" >> "${ROOTFS_DIR}/etc/modules"
+
 cd /etc/default
 rm -f ntpdate
 ln -s /boot/ntpdate .
