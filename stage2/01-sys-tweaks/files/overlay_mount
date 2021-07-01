@@ -12,11 +12,20 @@ case "$1" in
   start)
     log_daemon_msg "Starting overlay_mount"
     /bin/mount -t ext4 DATADEV -odefaults,noatime /data &&
-    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/etc,upperdir=/data/etc/upper,workdir=/data/etc/work /etc &&
-    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/home,upperdir=/data/home/upper,workdir=/data/home/work /home &&
-    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/srv,upperdir=/data/srv/upper,workdir=/data/srv/work /srv &&
-    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/tmp,upperdir=/data/tmp/upper,workdir=/data/tmp/work /tmp &&
-    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/var,upperdir=/data/var/upper,workdir=/data/var/work /var &&
+    if [ -f /data/overlay/ERASE ]; then \
+       log_progress_msg "erasing overlay" ; \
+       rm -f /data/overlay/ERASE ; \
+       cd /data/overlay ; \
+       rm -rf etc home srv tmp var ; \
+       mkdir -p etc/upper etc/work home/upper home/work srv/upper srv/work tmp/upper tmp/work var/upper var/work ; \
+    else \
+       log_progress_msg "keeping overlay" ; \
+    fi &&
+    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/etc,upperdir=/data/overlay/etc/upper,workdir=/data/overlay/etc/work /etc &&
+    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/home,upperdir=/data/overlay/home/upper,workdir=/data/overlay/home/work /home &&
+    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/srv,upperdir=/data/overlay/srv/upper,workdir=/data/overlay/srv/work /srv &&
+    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/tmp,upperdir=/data/overlay/tmp/upper,workdir=/data/overlay/tmp/work /tmp &&
+    /bin/mount -t overlay overlay -odefaults,noatime,lowerdir=/var,upperdir=/data/overlay/var/upper,workdir=/data/overlay/var/work /var &&
     log_end_msg $?
     ;;
   *)

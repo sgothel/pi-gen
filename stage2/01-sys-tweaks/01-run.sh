@@ -36,6 +36,20 @@ else
 	systemctl disable ssh
 fi
 systemctl enable regenerate_ssh_host_keys
+
+mkdir -p /data/overlay_a
+cd /data/overlay_a
+mkdir -p etc/upper etc/work home/upper home/work srv/upper srv/work tmp/upper tmp/work var/upper var/work
+
+mkdir -p /data/overlay_b
+cd /data/overlay_b
+mkdir -p etc/upper etc/work home/upper home/work srv/upper srv/work tmp/upper tmp/work var/upper var/work
+
+cd /data
+ln -s overlay_a overlay
+
+systemctl enable overlay_mount
+
 EOF
 
 if [ "${USE_QEMU}" = "1" ]; then

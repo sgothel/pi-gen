@@ -5,17 +5,6 @@ install -m 644 files/noclear.conf "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.s
 install -v -m 644 files/fstab "${ROOTFS_DIR}/etc/fstab"
 
 on_chroot << EOF
-mkdir -p /data/etc/upper
-mkdir -p /data/etc/work
-mkdir -p /data/home/upper
-mkdir -p /data/home/work
-mkdir -p /data/srv/upper
-mkdir -p /data/srv/work
-mkdir -p /data/tmp/upper
-mkdir -p /data/tmp/work
-mkdir -p /data/var/upper
-mkdir -p /data/var/work
-
 # Memory ~1G -> Swap 2G; BUT slow and small sd-card 
 # Use 200MB (Raspberry comes with 100MB default)
 rm -f /data/swapfile
