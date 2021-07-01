@@ -37,19 +37,48 @@ else
 fi
 systemctl enable regenerate_ssh_host_keys
 
-mkdir -p /data/overlay_a
-cd /data/overlay_a
-mkdir -p etc/upper etc/work home/upper home/work srv/upper srv/work tmp/upper tmp/work var/upper var/work
+#mkdir -p /data/overlay_a
+#cd /data/overlay_a
+#mkdir -p etc/upper etc/work home/upper home/work srv/upper srv/work tmp/upper tmp/work var/upper var/work
+#
+#mkdir -p /data/overlay_b
+#cd /data/overlay_b
+#mkdir -p etc/upper etc/work home/upper home/work srv/upper srv/work tmp/upper tmp/work var/upper var/work
+#
+#cd /data
+#ln -s overlay_a overlay
+#
+#systemctl enable overlay_mount
 
-mkdir -p /data/overlay_b
-cd /data/overlay_b
-mkdir -p etc/upper etc/work home/upper home/work srv/upper srv/work tmp/upper tmp/work var/upper var/work
+systemctl disable overlay_mount
+systemctl mask overlay_mount
 
-cd /data
-ln -s overlay_a overlay
+# Setup unique system folder /boot/sys_arm64_000
+mkdir -p /boot/sys_arm64_000
+mv /boot/*.dtb /boot/COPYING.linux /boot/LICENCE.broadcom /boot/initrd.img /boot/sys_arm64_000/
+mv /boot/issue.txt /boot/kernel8.img /boot/overlays /boot/rootfs.img /boot/sys_arm64_000/
 
-systemctl enable overlay_mount
+mv /boot/config.txt /boot/config.txt.orig
+mv /boot/cmdline.txt /boot/sys_arm64_000/cmdline.txt.orig
+if [ -f /boot/initrd.img ]; then
+    mv /boot/initrd.img /boot/sys_arm64_000/initrd.img.orig
+fi
 
+EOF
+
+install -m 644 files/boot/sys_arm64_000/cmdline.txt 	"${ROOTFS_DIR}/boot/sys_arm64_000/"
+
+install -m 644 files/boot/config.txt 	"${ROOTFS_DIR}/boot/"
+
+install -m 755 files/initramfs/loop_rootfs 	"${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/"
+
+# echo "squashfs" >> "${ROOTFS_DIR}/etc/modules"
+echo "squashfs" >> "${ROOTFS_DIR}/etc/initramfs-tools/modules"
+
+sed -i -e 's/MODULES=most/MODULES=dep/g' -e 's/BUSYBOX=auto/BUSYBOX=y/g' "${ROOTFS_DIR}/etc/initramfs-tools/initramfs.conf"
+
+on_chroot << EOF
+mkinitramfs -o /boot/sys_arm64_000/initrd.img
 EOF
 
 if [ "${USE_QEMU}" = "1" ]; then
@@ -57,14 +86,12 @@ if [ "${USE_QEMU}" = "1" ]; then
 	install -m 644 files/90-qemu.rules "${ROOTFS_DIR}/etc/udev/rules.d/"
 	on_chroot << EOF
 systemctl disable resize2fs_once
-systemctl enable overlay_mount
 EOF
 	echo "leaving QEMU mode"
 else
 	on_chroot << EOF
 #systemctl enable resize2fs_once
 systemctl disable resize2fs_once
-systemctl enable overlay_mount
 EOF
 	echo "leaving normal mode"
 fi

@@ -1,0 +1,237 @@
+#!/bin/sh
+
+PREREQ="udev"
+
+prereqs()
+{
+	echo "${PREREQ}"
+}
+
+case ${1} in
+	prereqs)
+		prereqs
+		exit 0
+		;;
+esac
+
+. /scripts/functions
+
+readonly BOOT_PART="/dev/mmcblk0p1"
+readonly BOOT_DIR="/mnt/boot"
+
+# Current config.txt with current OS_PREFIX
+readonly CONFIG_FILE="${BOOT_DIR}/config.txt"
+readonly CONFIG_FILE_OLD="${BOOT_DIR}/config.bak"
+
+# Optional fallback OS_PREFIX
+readonly OS_PREFIX_FILE_LAST="${BOOT_DIR}/sys_last"
+# Optional boot counter.
+readonly BOOT_COUNTER_FILE="${BOOT_DIR}/sys_cntr"
+
+#
+# To guarantee factory default fallback, have immutable:
+# - Folder '/boot/sys_arm64_000/' folder (OS_PREFIX_DEFAULT), which includes
+# - File '/boot/sys_arm64_000/config.txt' (CONFIG_FILE_DEFAULT).
+#
+# Notable: Every system folder contains its own immutable config.txt copy!
+#
+
+# Default OS_PREFIX -> ${BOOT_DIR}/${OS_PREFIX_DEFAULT}
+readonly OS_PREFIX_DEFAULT="sys_arm64_000"
+
+# Default config.txt with factory default OS_PREFIX_DEFAULT
+readonly CONFIG_FILE_DEFAULT="${BOOT_DIR}/${OS_PREFIX_DEFAULT}/config.txt"
+
+OS_PREFIX=""
+OS_PREFIX_LAST=""
+BOOT_COUNTER=""
+
+IMAGE_FILE=""
+FILE_FSTYPE=""
+
+check_fsfile() {
+    local fsfile=$1
+
+    if [ ! -f "${fsfile}" ]; then
+        log_failure_msg "loop_rootfs image file ${fsfile} doesn't exist."
+        return 1
+    fi
+
+    FILE_FSTYPE=$(get_fstype "${fsfile}")
+    if [ -z "${FILE_FSTYPE}" -o "${FILE_FSTYPE}" = "unknown" ]; then
+        log_failure_msg "loop_rootfs image file ${fsfile} unknown fstype."
+        return 1
+    fi
+
+    if ! fsck -V -t "${FILE_FSTYPE}" "${fsfile}"; then
+        log_failure_msg "loop_rootfs image file ${fsfile} fsck failed."
+        return 1
+    fi
+
+    return 0;
+}
+
+attach_rootfs() {
+    local fsfile=$1
+
+    if ! check_fsfile "${fsfile}"; then
+        return 1
+    fi
+
+    # Using losetup from initrd
+    local rootdev="/dev/loop0"
+    if ! losetup ${rootdev} ${fsfile}; then
+        log_failure_msg "loop_rootfs could not attached ${fsfile} to loop-device ${rootdev}."
+        return 1
+    fi
+
+    # Latest losetup
+    #local rootdev=$(losetup --find --show ${fsfile})
+    #if [ -z "${rootdev}" ]; then
+    #    panic "loop_rootfs could not attached ${fsfile} to loop-device."
+    #    return 1
+    #fi
+
+    # Propagate new local ROOT device and its ROOTFSTYPE
+    ROOTFSTYPE="${FILE_FSTYPE}"
+    ROOT="${rootdev}"
+    echo "ROOT=${ROOT}" >> /conf/param.conf
+    echo "ROOTFSTYPE=${ROOTFSTYPE}" >> /conf/param.conf
+    return 0;
+}
+
+# 1 old file, 2 new file, 3 expected old_prefix, 4 expected new prefix
+compare_files() {
+    local change=$(diff $1 $2)
+    #echo "change ${change}"
+    local old_prefix=$(echo "${change}" | sed -e '1d;3,4d' | awk -F = ' { print substr($2,0, length($2)-1) }')
+    local new_prefix=$(echo "${change}" | sed -e '1,3d'    | awk -F = ' { print substr($2,0, length($2)-1) }')
+    #echo "old_prefix has '${old_prefix}', expected '${3}'"
+    #echo "new_prefix has '${new_prefix}', expected '${4}'"
+    [ "${3}" = "${old_prefix}" -a "${4}" = "${new_prefix}" ]
+    return $?
+}
+
+
+fallback_rootfs() {
+    local os_prefix_current="$1"
+    local os_prefix_fallback="$2"
+    # Cleanup
+    rm -f "${OS_PREFIX_FILE_LAST}"
+    rm -f "${BOOT_COUNTER_FILE}"
+    if [ "${os_prefix_fallback}" = "${OS_PREFIX_DEFAULT}" ]; then
+        # Factory reset fast path
+        log_success_msg "loop_rootfs fallback to factory default: ${OS_PREFIX} -> ${os_prefix_fallback}."
+        mv "${CONFIG_FILE}" "${CONFIG_FILE_OLD}"
+        cp "${CONFIG_FILE_DEFAULT}" "${CONFIG_FILE}"
+    else
+        # Setup config.txt
+
+        #sed "s/os_prefix=${os_prefix_current}/os_prefix=${os_prefix_fallback}/g" "${CONFIG_FILE}" > "${CONFIG_FILE}.new"
+        #if ! compare_files "${CONFIG_FILE}" "${CONFIG_FILE}.new" "${os_prefix_current}" "${os_prefix_fallback}"; then
+        #    log_failure_msg "loop_rootfs failed fallback setting in new ${CONFIG_FILE}, fallback to factory reset ${CONFIG_FILE_DEFAULT}."
+        #    mv "${CONFIG_FILE}" "${CONFIG_FILE_OLD}"
+        #    cp "${CONFIG_FILE_DEFAULT}" "${CONFIG_FILE}"
+        #else
+        #    mv "${CONFIG_FILE}" "${CONFIG_FILE_OLD}"
+        #    mv "${CONFIG_FILE}.new" "${CONFIG_FILE}"
+        #fi
+
+        log_success_msg "loop_rootfs fallback to previous: ${OS_PREFIX} -> ${os_prefix_fallback}."
+        mv "${CONFIG_FILE}" "${CONFIG_FILE_OLD}"
+        cp "${BOOT_DIR}/${os_prefix_fallback}/config.txt" "${CONFIG_FILE}"
+    fi
+    sync
+    umount ${BOOT_DIR}
+    reboot
+    exit 1
+}
+
+if [ "${ROOT}" != "file" ]; then
+    log_begin_msg "loop_rootfs skip non file ROOT ${ROOT}"
+    log_end_msg
+    exit 0
+fi
+
+log_begin_msg "loop_rootfs"
+mkdir -p ${BOOT_DIR}
+
+# force fix verbose fseek, using undocumented options '-f', '-y'
+while ! fsck -f -y -V -t vfat "${BOOT_PART}"; do
+    panic "The vfat filesystem on ${BOOT_PART} requires a manual fsck"
+done
+
+if ! mount ${BOOT_PART} ${BOOT_DIR}; then
+    panic "loop_rootfs could not mount /boot."
+    exit 1
+fi
+
+if [ ! -f "${CONFIG_FILE}" ]; then
+    panic "loop_rootfs could not find ${CONFIG_FILE}."
+    exit 1
+fi
+
+OS_PREFIX=$(grep os_prefix ${CONFIG_FILE} | awk -F = ' { print substr($2,0, length($2)-1) }')
+if [ -z "${OS_PREFIX}" ]; then
+    panic "loop_rootfs no os_prefix defined in ${CONFIG_FILE}."
+    exit 1
+fi
+
+if [ -f "${OS_PREFIX_FILE_LAST}" ]; then
+    BOOT_COUNTER=$(cat "${BOOT_COUNTER_FILE}")
+    if [ -n "$BOOT_COUNTER" -a $BOOT_COUNTER -eq $BOOT_COUNTER 2> /dev/null ]; then
+        # BOOT_COUNTER is a number
+        if [ $BOOT_COUNTER -gt 0 ]; then
+            # Fallback to OS_PREFIX_LAST, booted once already without being cleared!
+            OS_PREFIX_LAST=$(cat "${OS_PREFIX_FILE_LAST}")
+            IMAGE_FILE="${BOOT_DIR}/${OS_PREFIX_LAST}/rootfs.img"
+            if ! check_fsfile "${IMAGE_FILE}"; then
+                # IMAGE_FILE not existing for OS_PREFIX_FILE_LAST or its fstype unknown
+                # Next: factory default OS_PREFIX_DEFAULT
+                log_failure_msg "loop_rootfs fallback ${OS_PREFIX_LAST} image file ${IMAGE_FILE} non existent or corrupt. Next factory default ${OS_PREFIX_DEFAULT}. Reboot..."
+                fallback_rootfs "${OS_PREFIX}" "${OS_PREFIX_DEFAULT}"
+            else
+                # Next: factory default OS_PREFIX_LAST
+                log_success_msg "loop_rootfs fallback ${OS_PREFIX} -> previous ${OS_PREFIX_LAST}, counter ${BOOT_COUNTER}. Reboot..."
+                fallback_rootfs "${OS_PREFIX}" "${OS_PREFIX_LAST}"
+            fi
+            exit 1
+        else
+            # Testing new OS_PREFIX 1st boot: BOOT_COUNTER -> 1
+            let BOOT_COUNTER=${BOOT_COUNTER} + 1
+            echo ${BOOT_COUNTER} > "${BOOT_COUNTER_FILE}"
+            log_success_msg "loop_rootfs testing new ${OS_PREFIX} (counter -> ${BOOT_COUNTER} (1))."
+        fi
+    else
+        # Create BOOT_COUNTER, 1st boot: BOOT_COUNTER -> 1
+        BOOT_COUNTER=1
+        echo ${BOOT_COUNTER} > "${BOOT_COUNTER_FILE}"
+        log_success_msg "loop_rootfs testing new ${OS_PREFIX} (counter -> ${BOOT_COUNTER} (2))."
+    fi
+elif [ -f "${BOOT_COUNTER_FILE}" ]; then
+    # cleanup BOOT_COUNTER_FILE, no OS_PREFIX_FILE_LAST
+    rm -f "${BOOT_COUNTER_FILE}"
+fi
+
+IMAGE_FILE="${BOOT_DIR}/${OS_PREFIX}/rootfs.img"
+
+if ! attach_rootfs "${IMAGE_FILE}"; then
+    log_failure_msg "loop_rootfs could not attach to ${OS_PREFIX}, file ${IMAGE_FILE}."
+    if [ -n "${OS_PREFIX_LAST}" -a "${OS_PREFIX}" != "${OS_PREFIX_LAST}" ]; then
+        log_success_msg "loop_rootfs fallback ${OS_PREFIX} -> previous ${OS_PREFIX_LAST}. Reboot..."
+        fallback_rootfs "${OS_PREFIX}" "${OS_PREFIX_LAST}"
+    elif [ "${OS_PREFIX}" != "${OS_PREFIX_DEFAULT}" ]; then
+        log_success_msg "loop_rootfs fallback ${OS_PREFIX} -> factory default ${OS_PREFIX_DEFAULT}. Reboot..."
+        fallback_rootfs "${OS_PREFIX}" "${OS_PREFIX_DEFAULT}"
+    else
+        panic "loop_rootfs could not attach to factory default ${OS_PREFIX}, file ${IMAGE_FILE}. No fallback!"
+    fi
+    exit 1
+fi
+
+log_success_msg "loop_rootfs attached ${OS_PREFIX}, ${ROOTFSTYPE} file ${IMAGE_FILE} to loop-device ${ROOT}."
+
+log_end_msg
+
+exit 0
+

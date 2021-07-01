@@ -1,6 +1,7 @@
 # Stateless Multiboot System
 
 The following stateless multiboot system exposes the following attributes
+
 * Using a readonly rootfs system
 * If files are mutated in a running system, allow capability to reset to default
 * Organize self containing system folder: kernel, rootfs, config.txt, ..
@@ -11,6 +12,7 @@ The following stateless multiboot system exposes the following attributes
 ## SD Card Requirement: 15200 MiB
 
 Example: 16 GB sdcard:
+
 ```
     15962472448 B
     15588352 KiB
@@ -20,18 +22,17 @@ Example: 16 GB sdcard:
     Safe: 15200 MiB
 ```
 
-## Chosen Layout
-
-### Image-A Layout
+## Filesystem Layout
 
 **16 GB SD Image-A (15223 MiB, full vfat):**
+
 * x: mbr      4 MiB
 * 1: boot 15200 MiB (rw, vfat): boot, system folder, app-data, app-image [current, old]
 
 ```
 /boot
 /boot/bootcode.bin
-/boot/config.txt: 'Contains system switch os_prefix, i.e. sys_arm64_000 -> os_prefix=sys_arm64_000/'
+/boot/config.txt: 'Contains system switch os_prefix=sys_arm64_000/'
 /boot/fix*.dat
 /boot/start*.elf
 
@@ -58,11 +59,77 @@ Example: 16 GB sdcard:
 /boot/sys_arm64_002/ .. ditto ...
 ```
 
+## Implementation
+
+### Update initiation by Elevator
+Elevator update writes the testing new OS_PREFIX into `/boot/config.txt`
+and writes the previous into `/boot/sys_last` as a fallback.
+
+### Bootloader via initrd and `loop_rootfs`
+* If `ROOT` != `file` perform normal boot operations (the `root` cmdline.txt argument)
+
+* If `/boot/sys_last` exists, loop_rootfs will
+    * If `boot/sys_cntr` doesn't exist, create it with value `1` Boot the new update.
+    * If `boot/sys_cntr` exist and holds value <= 0, increment it: Boot the new update.
+    * Otherwise: Fallback to `/boot/sys_last`
+
+The fallback has been simplified to:
+
+* copy `boot/config.txt` -> `boot/config.bak`
+* copy `boot/<sys_fallback>/config.txt` -> `boot/config.txt`
+
+In any case where the `rootfs.img` check fails,
+a fallback escalation will be used:
+
+* `/boot/sys_last` if exists, i.e. pre-update system
+* `sys_arm64_000` factory default, i.e. the last resort
+
+The following `rootfs.img` checks are performed:
+
+* file exists
+* filesystem type known
+* `fsck -V -t fstype rootfs.img`
+
+The following `boot` partition check is performed
+
+```
+while ! fsck -f -y -V -t vfat "${BOOT_PART}"; do
+    panic "The vfat filesystem on ${BOOT_PART} requires a manual fsck"
+done
+```
+
+### Updated System Validation
+
+Whenever a system has been booted,
+it shall determine whether it is working.
+
+If working, it shall remove the files (if exists):
+* `/boot/sys_last`
+* `boot/sys_cntr`
+
+Now the new system has been accepted.
+
+Otherwise the system shall reboot.
+
+A system may also initiate a fallback on its own,
+by copying the desired `/boot/<sys_fallback>/config.txt` to `/boot/config.txt`.
+
+In case the system is frozen and broken,
+the user shall reset the system
+which will cause aforementioned fallback procedure.
+
+### Testing
+
+Manual testing on developer machine performed with `stage2/01-sys-tweaks/files/initramfs/test/loop_rootfs_test`
+
+
+## 
 ## Other Layouts
 
 ### Image-B Layout
 
 16 GB SD Image-B (15223 MiB, no indirection, direct block access):
+
 * x: mbr     4 MiB
 * 1: boot 6100 MiB (rw, vfat): boot, app-data, app-image [current, old]
 * 2: data 1000 MiB (rw, ext4): fixed size, [overlayfs](https://www.kernel.org/doc/html/latest/filesystems/overlayfs.html?highlight=overlayfs) data [/etc /home /srv /tmp /var]
@@ -73,6 +140,7 @@ Example: 16 GB sdcard:
 ### Image-C Layout
 
 16 GB SD Image-C (final) (requires slower block access via underlying filesystem (loopfs), initramfs or other bootloader):
+
 * boot 250 MB (rw, vfat): just boot
 * data 1 GB (rw, ext4): fixed size, [overlayfs](https://www.kernel.org/doc/html/latest/filesystems/overlayfs.html?highlight=overlayfs) data [/etc /home /srv /tmp /var]
 * system 14 GB (rw, vfat): app-data, app-image [current, old], rootfs-image [current, old]
@@ -80,6 +148,7 @@ Example: 16 GB sdcard:
 ## Notes
 
 The `block` filesystems:
+
 ```
 /dev/mmcblk0p3 on / type ext4 (ro,noatime,errors=remount-ro)
 /dev/mmcblk0p2 on /data type ext4 (rw,noatime)
@@ -92,6 +161,7 @@ overlay on /var type overlay (rw,noatime,lowerdir=/var,upperdir=/data/var/upper,
 ```
 
 The `tempfs` filesystems:
+
 ```
 devtmpfs on /dev type devtmpfs (rw,relatime,size=333136k,nr_inodes=83284,mode=755)
 tmpfs on /dev/shm type tmpfs (rw,nosuid,nodev)
@@ -103,6 +173,7 @@ tmpfs on /run/user/1000 type tmpfs (rw,nosuid,nodev,relatime,size=93204k,mode=70
 ```
 
 The `special` filesystems:
+
 ```
 sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)
 proc on /proc type proc (rw,relatime)

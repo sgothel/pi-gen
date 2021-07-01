@@ -1,0 +1,48 @@
+# -*- shell-script -*-
+
+_log_msg()
+{
+	printf "$@"
+}
+
+log_success_msg()
+{
+	_log_msg "Success: %s\\n" "$*"
+}
+
+log_failure_msg()
+{
+	_log_msg "Failure: %s\\n" "$*"
+}
+
+log_warning_msg()
+{
+	_log_msg "Warning: %s\\n" "$*"
+}
+
+log_begin_msg()
+{
+	_log_msg "Begin: %s ... " "$*"
+}
+
+log_end_msg()
+{
+	_log_msg "done.\\n"
+}
+
+panic()
+{
+	echo "$@"
+
+    exit 1
+}
+
+# Parameter: device node to check
+# Echos fstype to stdout
+# Return value: indicates if an fs could be recognized
+get_fstype ()
+{
+	echo "ext4"
+	return 0
+}
+
