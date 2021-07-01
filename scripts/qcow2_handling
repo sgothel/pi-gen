@@ -39,6 +39,10 @@ export -f init_nbd
 # connect image with known format to block device
 connect_blkdev() {
 	init_nbd
+    if [ -z "$NBD_DEV" ] ; then
+        echo "connect_blkdev: NBD_DEV not determined. Exit."
+        exit 1;
+    fi
 	qemu-nbd --discard=unmap -c $NBD_DEV "$1"
 	sync
 	kpartx -a $NBD_DEV
@@ -50,6 +54,10 @@ export -f connect_blkdev
 # connect raw image to block device
 connect_raw_blkdev() {
 	init_nbd
+    if [ -z "$NBD_DEV" ] ; then
+        echo "connect_raw_blkdev: NBD_DEV not determined. Exit."
+        exit 1;
+    fi
 	qemu-nbd --discard=unmap -f raw -c $NBD_DEV "$1"
 	sync
 	kpartx -a $NBD_DEV
@@ -60,6 +68,10 @@ export -f connect_raw_blkdev
 
 # disconnect image from block device
 disconnect_blkdev() {
+    if [ -z "$NBD_DEV" ] ; then
+        echo "disconnect_blkdev: NBD_DEV not set. Exit."
+        exit 1;
+    fi
 	kpartx -d $NBD_DEV
 	qemu-nbd -d $NBD_DEV
 	NBD_DEV=
@@ -73,11 +85,29 @@ export -f disconnect_blkdev
 
 # mount qcow2 image: mount_image <image file> <mountpoint>
 mount_qimage() {
+    if [ -z "$1" ] ; then
+        echo "mount_qimage: image-file not given. Exit."
+        exit 1;
+    fi
+    if [ -z "$2" ] ; then
+        echo "mount_qimage: mountpoint not given. Exit."
+        exit 1;
+    fi
+
 	connect_blkdev "$1"
+
+    if [ -z "$NBD_DEV" ] ; then
+        echo "mount_qimage: NBD_DEV not determined. Exit."
+        exit 1;
+    fi
+    if [ -z "$MAP_ROOT_DEV" -o -z "$MAP_BOOT_DEV" -o -z "$MAP_DATA_DEV" ] ; then
+        echo "mount_qimage: map devices not determined. Exit."
+        exit 1;
+    fi
 	mount -v -t ext4 $MAP_ROOT_DEV "$2"
-	mkdir -p "${ROOTFS_DIR}/boot"
+	mkdir -p "$2/boot"
 	mount -v -t vfat $MAP_BOOT_DEV "$2/boot"
-	mkdir -p "${ROOTFS_DIR}/data"
+	mkdir -p "$2/data"
 	mount -v -t ext4 $MAP_DATA_DEV "$2/data"
 	CURRENT_MOUNTPOINT="$2"
 }
@@ -85,11 +115,29 @@ export -f mount_qimage
 
 # mount raw image: mount_image <image file> <mountpoint>
 mount_rawimage() {
+    if [ -z "$1" ] ; then
+        echo "mount_rawimage: image-file not given. Exit."
+        exit 1;
+    fi
+    if [ -z "$2" ] ; then
+        echo "mount_rawimage: mountpoint not given. Exit."
+        exit 1;
+    fi
+
 	connect_raw_blkdev "$1"
+
+    if [ -z "$NBD_DEV" ] ; then
+        echo "mount_rawimage: NBD_DEV not determined. Exit."
+        exit 1;
+    fi
+    if [ -z "$MAP_ROOT_DEV" -o -z "$MAP_BOOT_DEV" -o -z "$MAP_DATA_DEV" ] ; then
+        echo "mount_rawimage: map devices not determined. Exit."
+        exit 1;
+    fi
 	mount -v -t ext4 $MAP_ROOT_DEV "$2"
-	mkdir -p "${ROOTFS_DIR}/boot"
+	mkdir -p "$2/boot"
 	mount -v -t vfat $MAP_BOOT_DEV "$2/boot"
-	mkdir -p "${ROOTFS_DIR}/data"
+	mkdir -p "$2/data"
 	mount -v -t ext4 $MAP_DATA_DEV "$2/data"
 	CURRENT_MOUNTPOINT="$2"
 }
@@ -98,6 +146,10 @@ export -f mount_rawimage
 # umount qcow2 or raw image: umount_image <current mountpoint>
 umount_image() {
 	sync
+    if [ -z "$1" ] ; then
+        echo "umount_image: mountpoint not given. Exit."
+        exit 1;
+    fi
 	#umount "$1/boot"
 	#umount "$1/data"
 	while mount | grep -q "$1"; do

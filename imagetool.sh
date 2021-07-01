@@ -12,8 +12,8 @@ function usage()
 	cat << HEREDOC
 
 Usage:
-    Mount Image : $progname [--mount] [--image-name <path to qcow2 image>] [--mount-point <mount point>]
-    Umount Image: $progname [--umount] [--mount-point <mount point>]
+    Mount Image : $progname [--mount] [-i <path to qcow2 image>] [-p <mount point>]
+    Umount Image: $progname [--umount] [-n <nbd-device>] [-p <mount point>]
     Cleanup NBD : $progname [--cleanup]
 
    arguments:
@@ -21,20 +21,23 @@ Usage:
      -c, --cleanup        cleanup orphaned device mappings
      -C, --force-cleanup  forcefully cleanup orphaned or still connected device mappings
      -m, --mount          mount image
+     -r, --mount-raw      mount raw image
      -u, --umount         umount image
      -i, --image-name     path to qcow2 image
      -p, --mount-point    mount point for image
+     -n, --nbd-device     nbd device
 
-   This tool will use /dev/nbd1 as default for mounting an image. If you want to use another device, execute like this:
-   NBD_DEV=/dev/nbd2 ./$progname --mount --image <your image> --mount-point <your path>
+   ./$progname --mount --image <your image> --mount-point <your path>
 
 HEREDOC
 }
 
 MOUNT=0
 UMOUNT=0
+RAW_IMAGE=0
 IMAGE=""
 MOUNTPOINT=""
+NBD_DEV=
 
 nbd_cleanup() {
 	DEVS="$(lsblk | grep nbd | grep disk | cut -d" " -f1)"
@@ -80,6 +83,10 @@ while [[ $# -gt 0 ]]; do
 		-C|--force-cleanup)
 			force_nbd_cleanup
 		;;
+		-r|--mount-raw)
+			MOUNT=1
+            RAW_IMAGE=1
+		;;
 		-m|--mount)
 			MOUNT=1
 		;;
@@ -93,6 +100,10 @@ while [[ $# -gt 0 ]]; do
 		-p|--mount-point)
 			shift
 			MOUNTPOINT="$1"
+		;;
+		-n|--nbd-device)
+			shift
+			NBD_DEV="$1"
 		;;
 		*)
 			echo "Unknown option '$key'"
@@ -122,11 +133,19 @@ if [ "${UMOUNT}" = "1" ] && [ -z "${MOUNTPOINT}" ]; then
 	exit
 fi
 
-export NBD_DEV="${NBD_DEV:-/dev/nbd1}"
 source scripts/qcow2_handling
 
 if [ "${MOUNT}" = "1" ]; then
-	mount_qimage "${MOUNTPOINT}" "${IMAGE}"
+    if [ "${RAW_IMAGE}" = "1" ]; then
+        mount_rawimage "${IMAGE}" "${MOUNTPOINT}"
+    else
+        mount_qimage "${IMAGE}" "${MOUNTPOINT}"
+    fi
+    echo Using NBD_DEV $NBD_DEV
 elif [ "${UMOUNT}" = "1" ]; then
+    if [ -z "$NBD_DEV" ] ; then
+        echo "umount: NBD_DEV not set. Exit."
+        exit 1;
+    fi
 	umount_image "${MOUNTPOINT}"
 fi
