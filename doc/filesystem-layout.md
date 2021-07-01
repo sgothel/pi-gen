@@ -1,3 +1,15 @@
+# Stateless Multiboot System
+
+The following stateless multiboot system exposes the following attributes
+* Using a readonly rootfs system
+* If files are mutated in a running system, allow capability to reset to default
+* Organize self containing system folder: kernel, rootfs, config.txt, ..
+* Host multiple system folders: `/boot/sys_arm64_[000-999]/`
+* Host one immutable factory default folder `/boot/sys_arm64_000/`
+* Fallback mechanism to last known system or factor default system.
+
+## SD Card Requirement: 15200 MiB
+
 Example: 16 GB sdcard:
 ```
     15962472448 B
@@ -8,7 +20,49 @@ Example: 16 GB sdcard:
     Safe: 15200 MiB
 ```
 
-**16 GB SD Image-B (15223 MiB, no indirection, direct block access):**
+## Chosen Layout
+
+### Image-A Layout
+
+**16 GB SD Image-A (15223 MiB, full vfat):**
+* x: mbr      4 MiB
+* 1: boot 15200 MiB (rw, vfat): boot, system folder, app-data, app-image [current, old]
+
+```
+/boot
+/boot/bootcode.bin
+/boot/config.txt: 'Contains system switch os_prefix, i.e. sys_arm64_000 -> os_prefix=sys_arm64_000/'
+/boot/fix*.dat
+/boot/start*.elf
+
+/boot/config.bak: Old config.txt used before update or fallback.
+
+                  The following 2 files shall be deleted after successful update
+/boot/sys_last    Holds previous os_prefix before attempting to boot a new update
+/boot/sys_cntr    Holds boot counter of update. If 1 at boot, fallback to previous os_prefix.
+
+/boot/sys_arm64_000               sys_arm64_000 is immutable factory default
+/boot/sys_arm64_000/bcm*.dbt
+/boot/sys_arm64_000/cmdline.txt   root=file -> /boot/${os_prefix}/rootfs.img loop_rootfs mount
+/boot/sys_arm64_000/config.txt    Own copy of config.txt for each system folder
+/boot/sys_arm64_000/initrd.img    The loop_rootfs aware initial ramdisk loader
+/boot/sys_arm64_000/issue.txt     Specification of the rootfs system
+/boot/sys_arm64_000/kernel??.img  The kernel images
+/boot/sys_arm64_000/overlays/
+/boot/sys_arm64_000/rootfs.img    The read-only rootfs
+
+/boot/sys_arm64_001               A new update version 001
+/boot/sys_arm64_001/ .. ditto ...
+
+/boot/sys_arm64_002               A new update version 002
+/boot/sys_arm64_002/ .. ditto ...
+```
+
+## Other Layouts
+
+### Image-B Layout
+
+16 GB SD Image-B (15223 MiB, no indirection, direct block access):
 * x: mbr     4 MiB
 * 1: boot 6100 MiB (rw, vfat): boot, app-data, app-image [current, old]
 * 2: data 1000 MiB (rw, ext4): fixed size, [overlayfs](https://www.kernel.org/doc/html/latest/filesystems/overlayfs.html?highlight=overlayfs) data [/etc /home /srv /tmp /var]
@@ -16,14 +70,14 @@ Example: 16 GB sdcard:
 * 4: rootfs-2 4000 MiB (ext4 or squashfs, no-journal, read-only) [current or old]
 * x: unused 96 MiB (actually 96 MiB + 23 MiB = 119 MiB)
 
-Layout *Image-C* is on hold:
+### Image-C Layout
 
 16 GB SD Image-C (final) (requires slower block access via underlying filesystem (loopfs), initramfs or other bootloader):
 * boot 250 MB (rw, vfat): just boot
 * data 1 GB (rw, ext4): fixed size, [overlayfs](https://www.kernel.org/doc/html/latest/filesystems/overlayfs.html?highlight=overlayfs) data [/etc /home /srv /tmp /var]
 * system 14 GB (rw, vfat): app-data, app-image [current, old], rootfs-image [current, old]
 
-+++
+## Notes
 
 The `block` filesystems:
 ```
