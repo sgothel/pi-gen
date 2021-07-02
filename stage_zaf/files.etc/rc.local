@@ -21,13 +21,13 @@ python /home/pi/.off_button.py &
 
 #/usr/bin/fbi -T 1 -noverbose -a /home/pi/splash.png
 
-sudo /usr/bin/chvt 1
-
 # Print the IP address
 _IP=$(hostname -I) || true
 if [ "$_IP" ]; then
   printf "My IP address is %s\n" "$_IP"
 fi
+
+/usr/bin/chvt 1
 
 #rm /var/log/daemon.*
 #rm /var/log/syslo*
