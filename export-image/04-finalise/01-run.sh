@@ -110,6 +110,8 @@ echo >> "$INFO_FILE_ROOT"
 rm -rf "${DEPLOY_DIR2}"
 mkdir -p "${DEPLOY_DIR2}"
 cp -a "${ROOTFS_DIR}/boot" "${DEPLOY_DIR2}/sdcard"
+mkdir -p "${ROOTFS_DIR}/data"
+cp -a "${ROOTFS_DIR}/boot" "${ROOTFS_DIR}/data/sdcard"
 mkdir -p "${DEPLOY_DIR2}/sdcard/sys_arm64_000"
 
 unload_qimage
