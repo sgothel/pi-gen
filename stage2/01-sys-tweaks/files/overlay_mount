@@ -11,7 +11,9 @@
 case "$1" in
   start)
     log_daemon_msg "Starting overlay_mount"
-    /bin/mount -t tmpfs -o rw,suid,dev,exec,nouser,async,noatime,mode=0777,size=64M tmpfs /tmp &&
+    if ! /bin/grep "tmpfs /tmp tmpfs" /proc/mounts ; then
+        /bin/mount -t tmpfs -o rw,suid,dev,exec,nouser,async,noatime,mode=0777,size=64M tmpfs /tmp
+    fi
     /bin/mkdir -p /tmp/overlay/etc/upper /tmp/overlay/etc/work \
                   /tmp/overlay/home/upper /tmp/overlay/home/work \
                   /tmp/overlay/var/upper /tmp/overlay/var/work &&
