@@ -157,9 +157,9 @@ log_begin_msg "loop_rootfs"
 mkdir -p ${BOOT_DIR}
 
 # force fix verbose fseek, using undocumented options '-f', '-y'
-while ! fsck -f -y -V -t vfat "${BOOT_PART}"; do
-    panic "The vfat filesystem on ${BOOT_PART} requires a manual fsck"
-done
+if ! fsck -f -y -V -t vfat "${BOOT_PART}"; then
+    log_failure_msg "The vfat filesystem on ${BOOT_PART} seems to require a manual fsck, continuing"
+fi
 
 if ! mount ${BOOT_PART} ${BOOT_DIR}; then
     panic "loop_rootfs could not mount /boot."
@@ -230,6 +230,8 @@ if ! attach_rootfs "${IMAGE_FILE}"; then
 fi
 
 log_success_msg "loop_rootfs attached ${OS_PREFIX}, ${ROOTFSTYPE} file ${IMAGE_FILE} to loop-device ${ROOT}."
+
+panic "loop_rootfs debug break point."
 
 log_end_msg
 

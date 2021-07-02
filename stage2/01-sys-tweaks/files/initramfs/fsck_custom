@@ -1,0 +1,40 @@
+#!/bin/sh
+
+PREREQ=""
+
+prereqs()
+{
+	echo "$PREREQ"
+}
+
+get_fsck_types() {
+	get_fsck_type_fstab /    root
+	get_fsck_type_fstab /usr /usr
+}
+
+case $1 in
+prereqs)
+	prereqs
+	exit 0
+	;;
+esac
+
+if [ ! -x /sbin/fsck ]; then
+	exit 0
+fi
+
+. /usr/share/initramfs-tools/scripts/functions
+. /usr/share/initramfs-tools/hook-functions
+
+fsck_types="ext4 vfat"
+
+copy_exec /sbin/fsck
+copy_exec /sbin/logsave
+
+for type in $fsck_types; do
+	if prog="$(command -v "fsck.${type}")"; then
+		copy_exec "$prog"
+	else
+		echo "W: /sbin/fsck.${type} doesn't exist, can't install to initramfs" >&2
+	fi
+done
