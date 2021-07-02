@@ -174,25 +174,6 @@ if [ -n "${IMAGE}" -a ! -f "${IMAGE}" ]; then
     exit 1
 fi
 
-source scripts/qcow2_handling
-
-if [ "${MOUNT}" = "1" ]; then
-    if [ "${RAW_IMAGE}" = "1" ]; then
-        mount_rawimage "${IMAGE}" "${MOUNTPOINT}"
-    else
-        mount_qimage "${IMAGE}" "${MOUNTPOINT}"
-    fi
-    echo Using NBD_DEV $NBD_DEV
-elif [ "${UMOUNT}" = "1" ]; then
-    if [ -z "$NBD_DEV" ] ; then
-        NBD_DEV=$(find_nbd ${MOUNTPOINT})
-        if [ -z "${NBD_DEV}" ] ; then
-            echo "umount: NBD_DEV not set and not found for ${MOUNTPOINT}. Exit."
-            exit 1;
-        fi
-    fi
-	umount_image "${MOUNTPOINT}"
-fi
 if [ ! -d "${MOUNTPOINT}" ]; then
     echo "Mountpoint ${MOUNTPOINT} not existing."
     exit 1
@@ -208,7 +189,7 @@ if [ "${MOUNT}" = "1" ]; then
     fi
     echo Using NBD_DEV $NBD_DEV
 elif [ "${UMOUNT}" = "1" ]; then
-    if [ -z "$NBD_DEV" ] ; then
+    if [ -z "${NBD_DEV}" ] ; then
         NBD_DEV=$(find_nbd ${MOUNTPOINT})
         if [ -z "${NBD_DEV}" ] ; then
             echo "umount: NBD_DEV not set and not found for ${MOUNTPOINT}. Exit."
@@ -217,3 +198,4 @@ elif [ "${UMOUNT}" = "1" ]; then
     fi
 	umount_image "${MOUNTPOINT}"
 fi
+
