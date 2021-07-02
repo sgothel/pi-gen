@@ -11,6 +11,10 @@ if [ -n "$APT_PROXY" ]; then
 else
 	rm -f "${ROOTFS_DIR}/etc/apt/apt.conf.d/51cache"
 fi
+install -m 644 files/00default-selection "${ROOTFS_DIR}/etc/apt/apt.conf.d/00default-selection"
+install -m 644 files/02nocache           "${ROOTFS_DIR}/etc/apt/apt.conf.d/02nocache"
+
+install -m 644 files/01_nodoc            "${ROOTFS_DIR}/etc/dpkg/dpkg.cfg.d/01_nodoc"
 
 on_chroot apt-key add - < files/raspberrypi.gpg.key
 on_chroot << EOF

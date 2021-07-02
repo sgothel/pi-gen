@@ -1,0 +1,9 @@
+# /etc/apt/apt.conf.d/02nocache
+# https://wiki.ubuntu.com/ReducingDiskFootprint#Documentation
+
+Dir::Cache {
+    srcpkgcache "";
+    pkgcache "";
+}
+
+

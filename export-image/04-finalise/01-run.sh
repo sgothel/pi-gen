@@ -21,12 +21,20 @@ INFO_FILE_ROOT="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root.info"
 #INFO_FILE_DATA="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.data.info"
 
 on_chroot << EOF
-if [ -x /etc/init.d/fake-hwclock ]; then
-	/etc/init.d/fake-hwclock stop
-fi
-if hash hardlink 2>/dev/null; then
-	hardlink -t /usr/share/doc
-fi
+    if [ -x /etc/init.d/fake-hwclock ]; then
+        /etc/init.d/fake-hwclock stop
+    fi
+    if hash hardlink 2>/dev/null; then
+        hardlink -t /usr/share/doc
+    fi
+
+    # Keep in sync:
+    #  stage0/00-configure-apt/files/01_nodoc 
+    #  export-image/04-finalise/01-run.sh 
+    find /usr/share/doc -depth -type f ! -name copyright|xargs rm || true
+    find /usr/share/doc -empty|xargs rmdir || true
+    rm -rf /usr/share/man /usr/share/groff /usr/share/info /usr/share/lintian /usr/share/linda /var/cache/man
+    find /usr/share/locale -mindepth 1 -maxdepth 1 ! -name 'en' ! -name 'de*' !  -name 'se*' ! -name 'fr*' |xargs rm -r
 EOF
 
 if [ -d "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.config" ]; then
