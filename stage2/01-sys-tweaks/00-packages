@@ -18,8 +18,10 @@ usbutils
 libraspberrypi-dev libfreetype6-dev
 dosfstools
 #dphys-swapfile
+bluez
 raspberrypi-sys-mods
 pi-bluetooth
+rfkill
 apt-listchanges
 usb-modeswitch
 libpam-chksshpwd
@@ -37,3 +39,6 @@ vl805fw
 pciutils
 rpi-eeprom
 raspinfo
+busybox
+initramfs-tools-core
+initramfs-tools
