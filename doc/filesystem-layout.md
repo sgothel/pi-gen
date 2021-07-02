@@ -69,14 +69,14 @@ and writes the previous into `/boot/sys_last` as a fallback.
 * If `ROOT` != `file` perform normal boot operations (the `root` cmdline.txt argument)
 
 * If `/boot/sys_last` exists, loop_rootfs will
-    * If `boot/sys_cntr` doesn't exist, create it with value `1` Boot the new update.
-    * If `boot/sys_cntr` exist and holds value <= 0, increment it: Boot the new update.
+    * If `/boot/sys_cntr` doesn't exist, create it with value `1` Boot the new update.
+    * If `/boot/sys_cntr` exist and holds value <= 0, increment it: Boot the new update.
     * Otherwise: Fallback to `/boot/sys_last`
 
 The fallback has been simplified to:
 
-* copy `boot/config.txt` -> `boot/config.bak`
-* copy `boot/<sys_fallback>/config.txt` -> `boot/config.txt`
+* copy `/boot/config.txt` -> `/boot/config.bak`
+* copy `/boot/<sys_fallback>/config.txt` -> `/boot/config.txt`
 
 In any case where the `rootfs.img` check fails,
 a fallback escalation will be used:
@@ -93,9 +93,9 @@ The following `rootfs.img` checks are performed:
 The following `boot` partition check is performed
 
 ```
-while ! fsck -f -y -V -t vfat "${BOOT_PART}"; do
-    panic "The vfat filesystem on ${BOOT_PART} requires a manual fsck"
-done
+if ! fsck -f -y -V -t vfat "${BOOT_PART}"; then
+    echo "The vfat filesystem on ${BOOT_PART} seems to require a manual fsck, continuing"
+fi
 ```
 
 ### Updated System Validation
@@ -103,13 +103,13 @@ done
 Whenever a system has been booted,
 it shall determine whether it is working.
 
-If working, it shall remove the files (if exists):
+If working, it shall remove the files (if exists),
+signaling acceptance of the new system:
+
 * `/boot/sys_last`
-* `boot/sys_cntr`
+* `/boot/sys_cntr`
 
-Now the new system has been accepted.
-
-Otherwise the system shall reboot.
+Otherwise the system shall reboot to initiate a fallback.
 
 A system may also initiate a fallback on its own,
 by copying the desired `/boot/<sys_fallback>/config.txt` to `/boot/config.txt`.
