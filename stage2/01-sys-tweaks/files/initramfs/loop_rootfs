@@ -14,6 +14,11 @@ case ${1} in
 		;;
 esac
 
+#
+# If 'debug' has been passed via the boot cmdline,
+# logoutput will be made available to '/run/initramfs/initramfs.debug'.
+#
+
 . /scripts/functions
 
 readonly BOOT_PART="/dev/mmcblk0p1"
@@ -230,8 +235,6 @@ if ! attach_rootfs "${IMAGE_FILE}"; then
 fi
 
 log_success_msg "loop_rootfs attached ${OS_PREFIX}, ${ROOTFSTYPE} file ${IMAGE_FILE} to loop-device ${ROOT}."
-
-panic "loop_rootfs debug break point."
 
 log_end_msg
 
