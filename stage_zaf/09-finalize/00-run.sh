@@ -16,7 +16,7 @@ chown -R root:root ../files.elevator
 
 /bin/cp -dR --preserve=timestamps     ../files.boot/*       "${ROOTFS_DIR}/boot/"
 
-mkdir -p                                                    "${ROOTFS_DIR}/boot/zafena"
+mkdir -p                                                    "${ROOTFS_DIR}/boot/zafena/data"
 /bin/cp -dR --preserve=timestamps     ../files.zafena_app/* "${ROOTFS_DIR}/boot/zafena/"
 
 cat ../files.home/pi/.bashrc_startx                      >> "${ROOTFS_DIR}/home/pi/.bashrc"
@@ -28,8 +28,8 @@ on_chroot << EOF
     rm -f ntpdate
     ln -s /boot/ntpdate .
 
-ln -s /boot/zafena data
     cd /home/pi 
     rm -f data .xsession
+    ln -s /boot/zafena/data data
     ln -s .xinitrc .xsession
 EOF
