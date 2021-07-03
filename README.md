@@ -53,6 +53,18 @@ The following environment variables are supported:
    but you should use something else for a customized version.  Export files
    in stages may add suffixes to `IMG_NAME`.
 
+* `ROOTFS_RO` (Default: unset)
+
+   If set to one, i.e. `ROOTFS_RO=1`, the root filesystem will be set read-only
+   and a `tmpfs` creating containing the `overlayfs` mutable storage for
+   ```
+   /etc
+   /home
+   /var
+   ```
+   Note that the `/srv` mapping has been excluded here!
+   
+
 * `BASE_QCOW2_SIZE` (Default: 15200M)
 
    Size of the virtual qcow2 disk given in multiples of 1024, i.e. KiB, MiB or GiB.

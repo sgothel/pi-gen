@@ -1,12 +1,3 @@
 proc            /proc           proc    defaults          0       0
-
 BOOTDEV  /boot           vfat    defaults          0       2
-ROOTDEV  /               ext4    defaults,noatime,ro,errors=remount-ro  0       0
-
-# /data/swapfile  none     swap    defaults                 0       0
-
-# Done by /etc/init.d/overlay_mount
-# tmpfs    /tmp            tmpfs   rw,suid,dev,exec,nouser,async,noatime,mode=0777,size=64M,noauto 0 0
-
-# defaults = rw, suid, dev, exec, auto, nouser, and async
-
+ROOTDEV  /               ext4    defaults,noatime  0       1
