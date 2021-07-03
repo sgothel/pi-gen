@@ -109,10 +109,12 @@ echo >> "$INFO_FILE_ROOT"
 
 rm -rf "${DEPLOY_DIR2}"
 mkdir -p "${DEPLOY_DIR2}"
-cp -a "${ROOTFS_DIR}/boot" "${DEPLOY_DIR2}/sdcard"
-mkdir -p "${ROOTFS_DIR}/data"
-cp -a "${ROOTFS_DIR}/boot" "${ROOTFS_DIR}/data/sdcard"
-mkdir -p "${DEPLOY_DIR2}/sdcard/sys_arm64_000"
+cp -a                 "${ROOTFS_DIR}/boot"               "${DEPLOY_DIR2}/sdcard"
+mkdir -p                                                 "${ROOTFS_DIR}/data/sdcard/zafena/data"
+find                  "${ROOTFS_DIR}/boot/" -maxdepth 1 -type f \
+                         -exec cp -d --preserve=all \{\} "${ROOTFS_DIR}/data/sdcard/" \;
+cp -a                 "${ROOTFS_DIR}/boot/sys_arm64_000" "${ROOTFS_DIR}/data/sdcard/"
+cp -a                 "${ROOTFS_DIR}/boot/zafena/etc"    "${ROOTFS_DIR}/data/sdcard/zafena/"
 
 unload_qimage
 make_bootable_image "${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.qcow2" \
