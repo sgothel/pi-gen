@@ -15,6 +15,7 @@ chown -R root:root ../files.elevator
 /usr/bin/install -o 0 -g 0 -p ../files.home/pi/splash.png   "${ROOTFS_DIR}/usr/share/plymouth/themes/pix/"
 
 /bin/cp -dR --preserve=timestamps     ../files.boot/*       "${ROOTFS_DIR}/boot/"
+/bin/cp -d  --preserve=timestamps  ../files.boot/config.txt "${ROOTFS_DIR}/boot/sys_arm64_000/"
 mkdir -p                                                    "${ROOTFS_DIR}/boot/zafena/data"
 
 /bin/cp -dR --preserve=timestamps     ../files.zafena_app/* "${ROOTFS_DIR}/boot/zafena/"
