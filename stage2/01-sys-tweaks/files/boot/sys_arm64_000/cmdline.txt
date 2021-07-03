@@ -1,1 +1,1 @@
-dwc_otg.lpm_enable=0 console=tty3 root=file rootfstype=ext4 elevator=deadline fsck.repair=no rootwait
+dwc_otg.lpm_enable=0 console=tty3 root=file elevator=deadline fsck.repair=no rootwait
