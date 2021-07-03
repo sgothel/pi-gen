@@ -15,18 +15,32 @@ chown -R root:root ../files.elevator
 /usr/bin/install -o 0 -g 0 -p ../files.home/pi/splash.png   "${ROOTFS_DIR}/usr/share/plymouth/themes/pix/"
 
 /bin/cp -dR --preserve=timestamps     ../files.boot/*       "${ROOTFS_DIR}/boot/"
-
 mkdir -p                                                    "${ROOTFS_DIR}/boot/zafena/data"
+
 /bin/cp -dR --preserve=timestamps     ../files.zafena_app/* "${ROOTFS_DIR}/boot/zafena/"
 
 cat ../files.home/pi/.bashrc_startx                      >> "${ROOTFS_DIR}/home/pi/.bashrc"
 
 echo $ZAFENA_VERSION                                     >  "${ROOTFS_DIR}/etc/zafena_version"
 
+# Implied above by copying files.etc
+# install -m 600 files/ssh/ssh_host_dsa_key          "${ROOTFS_DIR}/etc/ssh"
+# install -m 600 files/ssh/ssh_host_ecdsa_key        "${ROOTFS_DIR}/etc/ssh"
+# install -m 600 files/ssh/ssh_host_ed25519_key      "${ROOTFS_DIR}/etc/ssh"
+# install -m 600 files/ssh/ssh_host_rsa_key          "${ROOTFS_DIR}/etc/ssh"
+
+# install -m 644 files/ssh/ssh_host_dsa_key.pub      "${ROOTFS_DIR}/etc/ssh"
+# install -m 644 files/ssh/ssh_host_ecdsa_key.pub    "${ROOTFS_DIR}/etc/ssh"
+# install -m 644 files/ssh/ssh_host_ed25519_key.pub  "${ROOTFS_DIR}/etc/ssh"
+# install -m 644 files/ssh/ssh_host_rsa_key.pub      "${ROOTFS_DIR}/etc/ssh"
+
 on_chroot << EOF
     cd /etc/default
     rm -f ntpdate
-    ln -s /boot/ntpdate .
+    ln -s /boot/zafena/etc/ntpdate .
+
+    systemctl disable regenerate_ssh_host_keys
+    systemctl mask regenerate_ssh_host_keys
 
     cd /home/pi 
     rm -f data .xsession

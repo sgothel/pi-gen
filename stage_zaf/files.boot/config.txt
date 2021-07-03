@@ -2,8 +2,24 @@
 # http://rpf.io/configtxt
 # Some settings may impact device functionality. See link above for details
 
-disable_splash=1
+[all]
+disable_splash=0
 
+# Prepended to the name of any operating system files loaded by the firmware:
+#   kernels, initramfs, cmdline.txt, .dtb files and the overlays folder with .dtbo files.
+os_prefix=sys_arm64_000/
+
+initramfs initrd.img followkernel
+
+#[pi3]
+#start_file=system_rpi_arm64_a/start_x.elf 
+#fixup_file=system_rpi_arm64_a/fixup_x.dat
+#
+#[pi4]
+#start_file=system_rpi_arm64_a/start4x.elf 
+#fixup_file=system_rpi_arm64_a/fixup4x.dat
+
+[all]
 # uncomment if you get no picture on HDMI for a default "safe" mode
 #hdmi_safe=1
 
@@ -64,7 +80,13 @@ disable_overscan=1
 
 # Merged Zafena settings (old pi-gen, newer zaf502 machine and my current raspi3/4 machines)
 
-# Tunes the bcm2835-sdhost SD/MMC driver
+# Tunes the bcm2835-sdhost SD/MMC DMA driver
+# Also available kernel cmdline: 
+#   'bcm2835_mmc.mmc_debug=0x1000' -> Forcing PIO mode
+#   'bcm2835_mmc.mmc_debug=0x2000' -> DMA channels allocated
+# See https://github.com/raspberrypi/firmware/issues/397#issuecomment-94574578
+
+# Turns off the bcm2835-sdhost SD/MMC DMA mode, enforces PIO mode
 dtoverlay=sdtweak,force_pio=1
 #dtparam=sd_force_pio=on
 
@@ -88,16 +110,15 @@ enable_uart=1
 core_freq=250
 
 arm_64bit=1
+
 #gpu_mem=128
 gpu_mem=64
-
-[pi4]
-# Enable DRM VC4 V3D driver on top of the dispmanx display stack
-# Also have two framebuffer
-dtoverlay=vc4-fkms-v3d
-max_framebuffers=2
 
 [all]
 # Enable DRM VC4 V3D driver on top of the dispmanx display stack
 dtoverlay=vc4-fkms-v3d
+
+[pi4]
+# Also have two framebuffer
+max_framebuffers=2
 
