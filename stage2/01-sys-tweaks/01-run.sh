@@ -28,8 +28,12 @@ fi
 
 on_chroot << EOF
     systemctl disable hwclock.sh
-    #systemctl disable nfs-common
+
+    systemctl disable nfs-common
+    systemctl mask nfs-common
     systemctl disable rpcbind
+    systemctl mask rpcbind
+
     if [ "${ENABLE_SSH}" == "1" ]; then
         systemctl enable ssh
     else
@@ -48,6 +52,8 @@ on_chroot << EOF
     #cd /data
     #ln -s overlay_a overlay
     #
+
+    sed -i -e 's/^D \/tmp/#D \/tmp/g' /usr/lib/tmpfiles.d/tmp.conf
 
     systemctl unmask overlay_mount
     systemctl enable overlay_mount
@@ -76,6 +82,36 @@ on_chroot << EOF
     done
 
     systemctl disable resize2fs_once
+    systemctl mask resize2fs_once
+
+    systemctl disable apt-daily
+    systemctl mask apt-daily
+    systemctl disable apt-daily.timer
+    systemctl mask apt-daily.timer
+    systemctl disable apt-daily-upgrade.timer
+    systemctl mask apt-daily-upgrade.timer
+
+    systemctl disable logrotate.timer
+    systemctl mask logrotate.time
+    systemctl disable man-db.timer
+    systemctl mask man-db.timer
+
+    systemctl disable bluetooth
+    systemctl mask bluetooth
+
+    sed -i -e 's/#Storage=auto/Storage=volatile/g;s/#Compress=yes/Compress=yes/g;s/#RuntimeMaxUse=/RuntimeMaxUse=1M/g;s/#ForwardToSyslog=yes/ForwardToSyslog=no/g;s/#ForwardToWall=yes/ForwardToWall=no/g' /etc/systemd/journald.conf
+
+    sed -i -e 's/MODULES=most/MODULES=dep/g;s/BUSYBOX=auto/BUSYBOX=y/g' /etc/initramfs-tools/initramfs.conf
+
+    echo "squashfs"     >> /etc/modules
+    echo "i2c-bcm2708"  >> /etc/modules
+    # echo "i2c-dev"    >> /etc/modules
+    # echo "rtc-ds1307" >> /etc/modules
+
+    echo "squashfs"     >> /etc/initramfs-tools/modules
+    echo "i2c-bcm2708"  >> /etc/initramfs-tools/modules
+    # echo "i2c-dev"    >> /etc/initramfs-tools/modules
+    # echo "rtc-ds1307" >> /etc/initramfs-tools/modules
 EOF
 
 install -m 644 files/boot/sys_arm64_000/cmdline.txt 	"${ROOTFS_DIR}/boot/sys_arm64_000/"
@@ -84,13 +120,6 @@ install -m 644 files/boot/config.txt 	"${ROOTFS_DIR}/boot/"
 
 install -m 755 files/initramfs/loop_rootfs 	"${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/"
 install -m 755 files/initramfs/fsck_custom 	"${ROOTFS_DIR}/etc/initramfs-tools/hooks/"
-
-# echo "squashfs" >> "${ROOTFS_DIR}/etc/modules"
-echo "squashfs" >> "${ROOTFS_DIR}/etc/initramfs-tools/modules"
-
-sed -i -e 's/MODULES=most/MODULES=dep/g;s/BUSYBOX=auto/BUSYBOX=y/g' "${ROOTFS_DIR}/etc/initramfs-tools/initramfs.conf"
-
-sed -i -e 's/#Storage=auto/Storage=volatile/g;s/#Compress=yes/Compress=yes/g;s/#RuntimeMaxUse=/RuntimeMaxUse=1M/g;s/#ForwardToSyslog=yes/ForwardToSyslog=no/g;s/#ForwardToWall=yes/ForwardToWall=no/g' "${ROOTFS_DIR}/etc/systemd/journald.conf"
 
 if [ "${USE_QEMU}" = "1" ]; then
 	echo "enter QEMU mode"
@@ -115,3 +144,4 @@ on_chroot <<EOF
 EOF
 
 rm -f "${ROOTFS_DIR}/etc/ssh/"ssh_host_*_key*
+
