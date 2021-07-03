@@ -275,6 +275,7 @@ if [[ "${PUBKEY_ONLY_SSH}" = "1" && -z "${PUBKEY_SSH_FIRST_USER}" ]]; then
 	exit 1
 fi
 
+CLEAN=1
 mkdir -p "${WORK_DIR}"
 log "Begin ${BASE_DIR}"
 
