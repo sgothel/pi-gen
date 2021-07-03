@@ -8,12 +8,15 @@ elif [ "${DEPLOY_DIR}" = "/" ] ; then
     exit 1
 fi
 
-DEPLOY_DIR2="${DEPLOY_DIR}/${IMG_FILENAME}"
+DEPLOY_DIR2="${DEPLOY_DIR}/${IMG_FILENAME}-${STAGE}"
 
 IMG_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
 INFO_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.info"
 
-IMG_FILE_ROOT="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root.img"
+IMG_FILE_ROOT_EXT4="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root-ext4.img"
+IMG_FILE_ROOT_SQFS_GZ="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root-sqfs_gz.img"
+IMG_FILE_ROOT_SQFS_LZO="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root-sqfs_lzo.img"
+IMG_FILE_ROOT_SQFS_NONE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root-sqfs_none.img"
 INFO_FILE_ROOT="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root.info"
 #IMG_FILE_BOOT="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.boot.img"
 #INFO_FILE_BOOT="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.boot.info"
@@ -89,7 +92,7 @@ cp "$INFO_FILE" "$INFO_FILE_ROOT"
 echo >> "$INFO_FILE_ROOT"
 echo "+++" >> "$INFO_FILE_ROOT"
 echo >> "$INFO_FILE_ROOT"
-echo "Root Partition `basename $IMG_FILE_ROOT`" >> "$INFO_FILE_ROOT"
+echo "Root Partition `basename $IMG_FILE_ROOT_EXT4`" >> "$INFO_FILE_ROOT"
 echo "Root Partition of `basename $IMG_FILE`" >> "$INFO_FILE_ROOT"
 echo >> "$INFO_FILE_ROOT"
 
@@ -119,11 +122,17 @@ cp -a                 "${ROOTFS_DIR}/boot/zafena/etc"    "${ROOTFS_DIR}/data/sdc
 unload_qimage
 make_bootable_image "${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.qcow2" \
     "$IMG_FILE" \
-    "$IMG_FILE_ROOT" "$INFO_FILE_ROOT"
+    "$IMG_FILE_ROOT_EXT4" "$INFO_FILE_ROOT"
 
 #    "$IMG_FILE_BOOT" "$INFO_FILE_BOOT" \
 #    "$IMG_FILE_DATA" "$INFO_FILE_DATA"
 
+
+mount -o ro "$IMG_FILE_ROOT_EXT4" "${ROOTFS_DIR}"
+mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_GZ}" -comp gzip
+mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_LZO}" -comp lzo
+mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_NONE}" -noI -noD -noF -noX
+umount "${ROOTFS_DIR}"
 
 cp -a "$INFO_FILE_ROOT" "${DEPLOY_DIR2}/sdcard/sys_arm64_000/rootfs.inf"
 mv "$INFO_FILE" "$INFO_FILE_ROOT" "$DEPLOY_DIR2/"
@@ -131,19 +140,24 @@ mv "$INFO_FILE" "$INFO_FILE_ROOT" "$DEPLOY_DIR2/"
 
 if [ "${DEPLOY_ZIP}" == "1" ]; then
 	gzip -k "$IMG_FILE"
-	gzip -k "$IMG_FILE_ROOT"
+	gzip -k "$IMG_FILE_ROOT_EXT4"
 	#gzip -k "$IMG_FILE_BOOT"
 	#gzip -k "$IMG_FILE_DATA"
     mv "$IMG_FILE".gz      "$DEPLOY_DIR2/"
-    mv "$IMG_FILE_ROOT".gz "$DEPLOY_DIR2/"
+    mv "$IMG_FILE_ROOT_EXT4".gz "$DEPLOY_DIR2/"
     #mv "$IMG_FILE_BOOT".gz "$DEPLOY_DIR2/"
     #mv "$IMG_FILE_DATA".gz "$DEPLOY_DIR2/"
 fi
 
 mv "$IMG_FILE"      "$DEPLOY_DIR2/"
 
-cp -a "$IMG_FILE_ROOT" "${DEPLOY_DIR2}/sdcard/sys_arm64_000/rootfs.img"
-mv "$IMG_FILE_ROOT" "$DEPLOY_DIR2/"
+# cp -a "$IMG_FILE_ROOT_EXT4" "${DEPLOY_DIR2}/sdcard/sys_arm64_000/rootfs.img"
+cp -a "$IMG_FILE_ROOT_SQFS_LZO" "${DEPLOY_DIR2}/sdcard/sys_arm64_000/rootfs.img"
+
+mv "$IMG_FILE_ROOT_EXT4" "$DEPLOY_DIR2/"
+mv "$IMG_FILE_ROOT_SQFS_GZ" "$DEPLOY_DIR2/"
+mv "$IMG_FILE_ROOT_SQFS_LZO" "$DEPLOY_DIR2/"
+mv "$IMG_FILE_ROOT_SQFS_NONE" "$DEPLOY_DIR2/"
 
 #mv "$IMG_FILE_BOOT" "$DEPLOY_DIR2/"
 #mv "$IMG_FILE_DATA" "$DEPLOY_DIR2/"
