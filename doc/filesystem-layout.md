@@ -47,10 +47,10 @@ Example: 16 GB sdcard:
 /boot/sys_arm64_000/cmdline.txt   root=file -> /boot/${os_prefix}/rootfs.img loop_rootfs mount
 /boot/sys_arm64_000/config.txt    Own copy of config.txt for each system folder
 /boot/sys_arm64_000/initrd.img    The loop_rootfs aware initial ramdisk loader
-/boot/sys_arm64_000/issue.txt     Specification of the rootfs system
 /boot/sys_arm64_000/kernel??.img  The kernel images
 /boot/sys_arm64_000/overlays/
 /boot/sys_arm64_000/rootfs.img    The read-only rootfs
+/boot/sys_arm64_000/rootfs.inf    Specification of the rootfs system
 
 /boot/sys_arm64_001               A new update version 001
 /boot/sys_arm64_001/ .. ditto ...
