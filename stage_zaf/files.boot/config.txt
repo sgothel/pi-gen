@@ -3,7 +3,7 @@
 # Some settings may impact device functionality. See link above for details
 
 [all]
-disable_splash=0
+disable_splash=1
 
 # Prepended to the name of any operating system files loaded by the firmware:
 #   kernels, initramfs, cmdline.txt, .dtb files and the overlays folder with .dtbo files.
