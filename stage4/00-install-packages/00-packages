@@ -22,7 +22,7 @@ mesa-utils
 #python3-smbus
 #python3-flask
 #pprompt
-piwiz
+#piwiz
 rp-prefapps
 #ffmpeg
 #vlc
