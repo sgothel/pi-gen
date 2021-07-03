@@ -1,13 +1,15 @@
 [Unit]
 Description=OverlayFS mount service
 DefaultDependencies=no
-Before=local-fs.target
+After=systemd-remount-fs.service systemd-udevd.service
+Before=systemd-random-seed.service systemd-journald.service local-fs-pre.target sysinit.target
 
 [Service]
 Type=oneshot
+RemainAfterExit=yes
 ExecStart=/etc/init.d/overlay_mount start
 
 [Install]
-WantedBy=local-fs.target
+WantedBy=systemd-random-seed.service
 Alias=overlay_mount.service
 
