@@ -24,19 +24,12 @@ cat ../files.home/pi/.bashrc_startx                      >> "${ROOTFS_DIR}/home/
 echo $ZAFENA_VERSION                                     >  "${ROOTFS_DIR}/etc/zafena_version"
 
 on_chroot << EOF
-systemctl disable bluetooth
-systemctl mask bluetooth
+    cd /etc/default
+    rm -f ntpdate
+    ln -s /boot/ntpdate .
 
-echo "i2c-bcm2708" >> "${ROOTFS_DIR}/etc/modules"
-echo "#i2c-dev" >> "${ROOTFS_DIR}/etc/modules"
-echo "#rtc-ds1307" >> "${ROOTFS_DIR}/etc/modules"
-
-cd /etc/default
-rm -f ntpdate
-ln -s /boot/ntpdate .
-
-cd /home/pi 
-rm -f data .xsession
 ln -s /boot/zafena data
-ln -s .xinitrc .xsession
+    cd /home/pi 
+    rm -f data .xsession
+    ln -s .xinitrc .xsession
 EOF
