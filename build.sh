@@ -22,8 +22,8 @@ EOF
 			if [ -n "$PACKAGES" ]; then
 				on_chroot << EOF
 echo "Installing PACKAGES-nr '${PACKAGES}'"
-echo apt-get -o APT::Acquire::Retries=3 --no-install-recommends -y $PACKAGES
-apt-get -o APT::Acquire::Retries=3 --no-install-recommends -y $PACKAGES
+echo apt-get -o APT::Acquire::Retries=3 install --no-install-recommends -y $PACKAGES
+apt-get -o APT::Acquire::Retries=3 install --no-install-recommends -y $PACKAGES
 EOF
 				if [ "${USE_QCOW2}" = "1" ]; then
 					on_chroot << EOF
