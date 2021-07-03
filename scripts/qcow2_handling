@@ -9,12 +9,11 @@ export CURRENT_MOUNTPOINT
 export NBD_DEV
 export MAP_BOOT_DEV
 export MAP_ROOT_DEV
-export MAP_ROOT2_DEV
 
 # set in build.sh
 # should be fairly enough for the beginning
 # overwrite here by uncommenting following lines
-# BASE_QCOW2_SIZE=16G
+# BASE_QCOW2_SIZE=15200M
 
 # find and initialize free block device nodes
 init_nbd() {
@@ -26,7 +25,6 @@ init_nbd() {
 			NBD_DEV=/dev/$(basename $x)
 			MAP_BOOT_DEV=/dev/mapper/$(basename $x)p1
 			MAP_ROOT_DEV=/dev/mapper/$(basename $x)p2
-			MAP_ROOT2_DEV=/dev/mapper/$(basename $x)p3
 			break
 		fi
 	done
@@ -75,7 +73,6 @@ disconnect_blkdev() {
 	NBD_DEV=
 	MAP_BOOT_DEV=
 	MAP_ROOT_DEV=
-	MAP_ROOT2_DEV=
 	CURRENT_IMAGE=
 }
 export -f disconnect_blkdev
@@ -180,17 +177,15 @@ load_qimage() {
 				sync
 				qemu-nbd --discard=unmap -c $NBD_DEV image-${STAGE}.qcow2
 				sync
-                # 1 boot (7100 MiB), 2 rootfs1 (4000 MiB), 3 rootfs2 (4000 MiB)
+                # 1 boot (7100 MiB), rootfs (remainder of BASE_QCOW2_SIZE)
 				sfdisk $NBD_DEV << EOF
 4MiB,7100MiB,c,*
-7104MiB,4000MiB,83
-11104MiB,4000MiB,83;
+7104MiB,,83;
 EOF
 				sync
 				kpartx -a $NBD_DEV
-				mkdosfs -n boot -F 32 -v $MAP_BOOT_DEV
-				mkfs.ext4 -L rootfs1 -O "^has_journal,^metadata_csum,^64bit" $MAP_ROOT_DEV
-				mkfs.ext4 -L rootfs2 -O "^has_journal,^metadata_csum,^64bit" $MAP_ROOT2_DEV
+				mkfs.fat -n BOOT -F 32 -v $MAP_BOOT_DEV
+				mkfs.ext4 -L ROOTFS -m 0 -O "^has_journal,^metadata_csum,^64bit" $MAP_ROOT_DEV
 				sync
 			else
 				if [ ! -f "${WORK_DIR}/image-${PREV_STAGE}.qcow2" ]; then
@@ -245,9 +240,9 @@ function resize_qcow2() {
 		return 1
 	fi
 
-    # 1 boot, 2 rootfs1, 3 rootfs2
+    # 1 boot, 2 rootfs
     #
-    # rootfs1 ext4 ^journal => ext2, it is the fixed third partition as well!
+    # rootfs ext4 ^journal => ext2, second partition
 	# ROOT_MARGIN=$((800*1024*1024))
 	ROOT_MARGIN=$((1*1024*1024))
 	PARTED_OUT=`parted -s -m "$NBD_DEV" unit B print`
@@ -270,10 +265,10 @@ function resize_qcow2() {
 	#ACT2=`parted -s "$NBD_DEV" unit B mkpart primary $PART_START $PART_NEW_END`
 	#NEW_IMG_SIZE=`parted -s -m "$NBD_DEV" unit B print free | tail -1 | awk -F: ' { print substr($2,1,length($2)-1) } '`
 	NEW_IMG_SIZE=$PART_NEW_END
-    ROOT1_PART_START=$PART_START
-    ROOT1_PART_SIZE_BYTES=$PART_NEW_SIZE
-    ROOT1_PART_BLOCK_SIZE=$BLOCK_SIZE
-    ROOT1_PART_BLOCK_COUNT=$DATA_SIZE
+    ROOT_PART_START=$PART_START
+    ROOT_PART_SIZE_BYTES=$PART_NEW_SIZE
+    ROOT_PART_BLOCK_SIZE=$BLOCK_SIZE
+    ROOT_PART_BLOCK_COUNT=$DATA_SIZE
 }
 export -f resize_qcow2
 
@@ -295,7 +290,7 @@ function write_partitions_qcow2() {
     inf_file=$5
 
     # typical block sizes:
-    #   1 boot (512), 2 data (4096), 3 rootfs1 (4096), 4 rootfs2 (4096)
+    #   1 boot (512), 2 rootfs (4096)
     #
     if [ "$block_count" = "0" ] ; then
         # copy whole partition
@@ -328,7 +323,7 @@ function make_bootable_image() {
 	connect_blkdev "${EXPORT_QCOW2}"
     
 	CALL_FROM_MBI=1
-	echo "Resize fs, while keeping partitions alone"
+	echo "Resize fs"
 	resize_qcow2
 	sync
 	CALL_FROM_MBI=
@@ -336,14 +331,13 @@ function make_bootable_image() {
 	echo "Disconnect block device"
 	disconnect_blkdev
     
-	#if [ -z "$NEW_IMG_SIZE" ]; then
-	#	echo "NEW_IMG_SIZE could not be calculated, cannot process image. Exit."
-	#	exit 1
-	#fi
-    # 
-	#echo "Shrinking qcow2 image"
-	#qemu-img resize --shrink "${EXPORT_QCOW2}" $NEW_IMG_SIZE
-	#sync
+	if [ -z "$NEW_IMG_SIZE" ]; then
+		echo "NEW_IMG_SIZE could not be calculated, cannot process image. Exit."
+		exit 1
+	fi
+	echo "Shrinking qcow2 image"
+	qemu-img resize --shrink "${EXPORT_QCOW2}" $NEW_IMG_SIZE
+	sync
 
 	echo "Convert qcow2 to raw image"
 	qemu-img convert -f qcow2 -O raw "${EXPORT_QCOW2}" "${EXPORT_IMAGE}"
@@ -366,26 +360,26 @@ function make_bootable_image() {
         echo "Setup PARTUUIDs"
         BOOT_PARTUUID="${IMGID}-01"
         echo "Boot: $BOOT_PARTUUID"
-        ROOT1_PARTUUID="${IMGID}-02"
-        echo "Root1: $ROOT1_PARTUUID"
+        ROOT_PARTUUID="${IMGID}-02"
+        echo "Root1: $ROOT_PARTUUID"
 
-        if [ ! -z "$BOOT_PARTUUID" ] && [ ! -z "$ROOT1_PARTUUID" ]; then
+        if [ ! -z "$BOOT_PARTUUID" ] && [ ! -z "$ROOT_PARTUUID" ]; then
             echo "Set UUIDs to make it bootable"
             sed -i "s/BOOTDEV/PARTUUID=${BOOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
-            sed -i "s/ROOTDEV/PARTUUID=${ROOT1_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
-            # sed -i "s/ROOTDEV/PARTUUID=${ROOT1_PARTUUID}/" "${MOUNTROOT}/boot/cmdline.txt"
+            sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
+            # sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/boot/cmdline.txt"
         fi
     else
         echo "Setup hard devicenames"
         BOOT_DEV_NAME="\/dev\/mmcblk0p1"
         echo "Boot: $BOOT_DEV_NAME"
-        ROOT1_DEV_NAME="\/dev\/mmcblk0p2"
-        echo "Root1: $ROOT1_DEV_NAME"
+        ROOT_DEV_NAME="\/dev\/mmcblk0p2"
+        echo "Root1: $ROOT_DEV_NAME"
         
         echo "Set hard device names to make it bootable"
         sed -i "s/BOOTDEV/${BOOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
-        sed -i "s/ROOTDEV/${ROOT1_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
-        # sed -i "s/ROOTDEV/${ROOT1_DEV_NAME}/" "${MOUNTROOT}/boot/cmdline.txt"
+        sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
+        # sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/boot/cmdline.txt"
     fi
 
 	echo "Umount image"
@@ -398,7 +392,7 @@ function make_bootable_image() {
 	CALL_FROM_MBI=1
     # 1 boot (512), 2 data (4096), 3 rootfs1 (4096), 4 rootfs2 (4096)
 	echo "Extract partitions to raw image"
-	write_partitions_qcow2 $MAP_ROOT_DEV  $ROOT1_PART_BLOCK_SIZE $ROOT1_PART_BLOCK_COUNT $EXPORT_IMAGE_ROOT $EXPORT_INFO_ROOT
+	write_partitions_qcow2 $MAP_ROOT_DEV  $ROOT_PART_BLOCK_SIZE $ROOT_PART_BLOCK_COUNT $EXPORT_IMAGE_ROOT $EXPORT_INFO_ROOT
 	#write_partitions_qcow2 $MAP_BOOT_DEV 512                    0                       $EXPORT_IMAGE_BOOT $EXPORT_INFO_BOOT
 	sync
 	CALL_FROM_MBI=
