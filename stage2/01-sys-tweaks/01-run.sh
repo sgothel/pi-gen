@@ -118,9 +118,10 @@ on_chroot << EOF
     # echo "rtc-ds1307" >> /etc/initramfs-tools/modules
 EOF
 
-install -m 644 files/boot/sys_arm64_000/cmdline.txt 	"${ROOTFS_DIR}/boot/sys_arm64_000/"
+install -m 644 files/boot/sys_arm64_000/cmdline.txt  "${ROOTFS_DIR}/boot/sys_arm64_000/"
 
-install -m 644 files/boot/config.txt 	"${ROOTFS_DIR}/boot/"
+install -m 644 files/boot/config.txt 	             "${ROOTFS_DIR}/boot/"
+install -m 644 files/boot/config.txt 	             "${ROOTFS_DIR}/boot/sys_arm64_000/"
 
 install -m 755 files/initramfs/loop_rootfs 	"${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/"
 install -m 755 files/initramfs/fsck_custom 	"${ROOTFS_DIR}/etc/initramfs-tools/hooks/"
