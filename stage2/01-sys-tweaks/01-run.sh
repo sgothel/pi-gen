@@ -74,12 +74,14 @@ on_chroot << EOF
              mv "\${i}" /boot/sys_arm64_000/
         fi
     done
-
-    mv /boot/overlays /boot/sys_arm64_000/
+    
+    if [ -d /boot/overlays ] ; then
+        mv /boot/overlays /boot/sys_arm64_000/
+    fi
 
     for i in /boot/config.txt /boot/cmdline.txt /boot/initrd.img ; do
         if [ -f "\${i}" ]; then
-             mv "\${i}" /boot/sys_arm64_000/"\${i}.orig"
+             mv "\${i}" /boot/sys_arm64_000/\`basename \${i}\`.orig
         fi
     done
 
