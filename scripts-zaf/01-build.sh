@@ -12,7 +12,7 @@ export RELEASE=buster
 export APT_PROXY=http://jordan:3142
 
 # ZAFENA_VERSION: major-version . minor.version - client . client-build
-export ZAFENA_VERSION='1.1-0.6'
+export ZAFENA_VERSION='1.2-0.9'
 
 export IMG_NAME="zafcon-${ZAFENA_VERSION}"
 export WORK_DIR="/data/zafcon_arm64_${ZAFENA_VERSION}-work"
