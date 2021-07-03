@@ -34,7 +34,7 @@ on_chroot << EOF
     systemctl disable rpcbind
     systemctl mask rpcbind
 
-    if [ "${ENABLE_SSH}" == "1" ]; then
+    if [ "\${ENABLE_SSH}" == "1" ]; then
         systemctl enable ssh
     else
         systemctl disable ssh
@@ -68,16 +68,18 @@ on_chroot << EOF
 
     find /boot -maxdepth 1 -name kernel\*.img -exec mv \{\} /boot/sys_arm64_000/ \;
 
-    for i in /boot/COPYING.linux /boot/LICENCE.broadcom /boot/sys_arm64_000/ \
-             /boot/issue.txt /boot/overlays /boot/rootfs.img ; do
-        if [ -f "${i}" ]; then
-             mv "${i}" /boot/sys_arm64_000/
+    for i in /boot/COPYING.linux /boot/LICENCE.broadcom \
+             /boot/issue.txt /boot/rootfs.img ; do
+        if [ -f "\${i}" ]; then
+             mv "\${i}" /boot/sys_arm64_000/
         fi
     done
 
+    mv /boot/overlays /boot/sys_arm64_000/
+
     for i in /boot/config.txt /boot/cmdline.txt /boot/initrd.img ; do
-        if [ -f "${i}" ]; then
-             mv "${i}" /boot/sys_arm64_000/"${i}.orig"
+        if [ -f "\${i}" ]; then
+             mv "\${i}" /boot/sys_arm64_000/"\${i}.orig"
         fi
     done
 
