@@ -148,7 +148,20 @@ fallback_rootfs() {
     fi
     sync
     umount ${BOOT_DIR}
-    reboot
+
+    # /usr/sbin/reboot --help
+    # BusyBox v1.30.1 (Debian 1:1.30.1-4) multi-call binary.
+    # Usage: reboot [-d DELAY] [-n] [-f]
+    # Reboot the system
+    #         -d SEC  Delay interval
+    #         -n      Do not sync
+    #         -f      Force (don't go through init)
+    # /usr/sbin/reboot -f
+    #
+    # /usr/bin/reboot --help
+    # Usage: {halt|reboot|poweroff} [-n] [reboot-arg]
+    #
+    /usr/bin/reboot reboot
     exit 1
 }
 
