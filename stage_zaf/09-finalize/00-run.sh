@@ -47,4 +47,15 @@ on_chroot << EOF
     rm -f data .xsession
     ln -s /boot/zafena/data data
     ln -s .xinitrc .xsession
+
+    if [ "${ROOTFS_RO}" = "1" ] ; then
+        # Rebuild `/data/sdcard` (flush stage2's produce)
+        rm -rf                                /data/sdcard
+        mkdir -p                              /data/sdcard/zafena/data
+        find  /boot/ -maxdepth 1 -type f \
+              -exec cp -d --preserve=all \{\} /data/sdcard/ \;
+        cp -a /boot/sys_arm64_000             /data/sdcard/
+        cp -a /boot/zafena/etc                /data/sdcard/zafena/
+    fi
 EOF
+
