@@ -159,6 +159,11 @@ on_chroot <<EOF
         KVERSION=\$(ls /lib/modules/ | tail -n 1)
         echo "mkinitramfs for kernel version: \${KVERSION}"
         /usr/sbin/mkinitramfs -o /boot/sys_arm64_000/initrd.img \${KVERSION}
+
+        mkdir -p /data/sdcard
+        find  /boot/ -maxdepth 1 -type f \
+              -exec cp -d --preserve=all \{\} /data/sdcard/ \;
+        cp -a /boot/sys_arm64_000 /data/sdcard/
     fi
 EOF
 

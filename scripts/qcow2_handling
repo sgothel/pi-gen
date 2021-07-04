@@ -309,15 +309,10 @@ export -f write_partitions_qcow2
 
 # create raw img from qcow2: make_bootable_image <in.qcow2> <out.img>
 function make_bootable_image() {
-    
 	EXPORT_QCOW2="$1"
 	EXPORT_IMAGE="$2"
 	EXPORT_IMAGE_ROOT="$3"
 	EXPORT_INFO_ROOT="$4"
-	#EXPORT_IMAGE_BOOT="$5"
-	#EXPORT_INFO_BOOT="$6"
-	#EXPORT_IMAGE_DATA="$7"
-	#EXPORT_INFO_DATA="$8"
 
 	echo "Connect block device to source qcow2"
 	connect_blkdev "${EXPORT_QCOW2}"
@@ -367,7 +362,7 @@ function make_bootable_image() {
             echo "Set UUIDs to make it bootable"
             sed -i "s/BOOTDEV/PARTUUID=${BOOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
             sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
-            # sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/boot/cmdline.txt"
+            sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/boot/cmdline.txt"
         fi
     else
         echo "Setup hard devicenames"
@@ -379,7 +374,7 @@ function make_bootable_image() {
         echo "Set hard device names to make it bootable"
         sed -i "s/BOOTDEV/${BOOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
         sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
-        # sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/boot/cmdline.txt"
+        sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/boot/cmdline.txt"
     fi
 
 	echo "Umount image"
@@ -390,10 +385,9 @@ function make_bootable_image() {
 	connect_raw_blkdev "${EXPORT_IMAGE}"
     
 	CALL_FROM_MBI=1
-    # 1 boot (512), 2 data (4096), 3 rootfs1 (4096), 4 rootfs2 (4096)
+    # 1 boot (512), 2 rootfs (4096)
 	echo "Extract partitions to raw image"
 	write_partitions_qcow2 $MAP_ROOT_DEV  $ROOT_PART_BLOCK_SIZE $ROOT_PART_BLOCK_COUNT $EXPORT_IMAGE_ROOT $EXPORT_INFO_ROOT
-	#write_partitions_qcow2 $MAP_BOOT_DEV 512                    0                       $EXPORT_IMAGE_BOOT $EXPORT_INFO_BOOT
 	sync
 	CALL_FROM_MBI=
     
