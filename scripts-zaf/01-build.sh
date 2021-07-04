@@ -11,8 +11,12 @@ export RELEASE=buster
 
 export APT_PROXY=http://jordan:3142
 
+# Produce a read-only rootfs
+export ROOTFS_RO=1
+export REDUCED_FOOTPRINT=1
+
 # ZAFENA_VERSION: major-version . minor.version - client . client-build
-export ZAFENA_VERSION='1.2-0.9'
+export ZAFENA_VERSION='1.3-0.1'
 
 export IMG_NAME="zafcon-${ZAFENA_VERSION}"
 export WORK_DIR="/data/zafcon_arm64_${ZAFENA_VERSION}-work"
@@ -23,7 +27,7 @@ export DEPLOY_ZIP=0
 
 #export USE_QEMU=1
 
-export TARGET_HOSTNAME=raspi
+export TARGET_HOSTNAME=zaf502
 
 export LOCALE_DEFAULT=en_US.UTF-8
 export KEYBOARD_KEYMAP=us
@@ -38,5 +42,8 @@ export PUBKEY_ONLY_SSH=1
 
 export STAGE_LIST="stage0 stage1 stage2 stage3 stage4 stage_zaf"
 #export STAGE_LIST="stage0 stage1 stage2"
+
+touch ${rootdir}/stage2/SKIP_IMAGES
+touch ${rootdir}/stage4/SKIP_IMAGES
 
 ./build.sh
