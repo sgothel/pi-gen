@@ -69,16 +69,6 @@ The following environment variables are supported:
    the ssh host keys are retained while `regenerate_ssh_host_keys` is disabled
    and the final `/boot/config.txt` has `splash` disabled (no rainbow).
    
-* `CUSTOM_IOT` (Default: unset)
-
-   If set to one, i.e. `CUSTOM_IOT=1`, certain embedded low footprint settings
-   will be applied, e.g.:
-   ```
-   - systemctl disable bluetooth
-   - systemctl mask bluetooth
-   - loading module i2c-bcm2708
-   ```
-
 * `BASE_QCOW2_SIZE` (Default: 15200M)
 
    Size of the virtual qcow2 disk given in multiples of 1024, i.e. KiB, MiB or GiB.

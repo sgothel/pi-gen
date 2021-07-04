@@ -101,27 +101,12 @@ on_chroot << EOF
 
         sed -i -e 's/#Storage=auto/Storage=volatile/g;s/#Compress=yes/Compress=yes/g;s/#RuntimeMaxUse=/RuntimeMaxUse=1M/g;s/#ForwardToSyslog=yes/ForwardToSyslog=no/g;s/#ForwardToWall=yes/ForwardToWall=no/g' /etc/systemd/journald.conf
 
-            sed -i -e 's/MODULES=most/MODULES=dep/g;s/BUSYBOX=auto/BUSYBOX=y/g' /etc/initramfs-tools/initramfs.conf
+        sed -i -e 's/MODULES=most/MODULES=dep/g;s/BUSYBOX=auto/BUSYBOX=y/g' /etc/initramfs-tools/initramfs.conf
 
         echo "squashfs"     >> /etc/modules
         echo "squashfs"     >> /etc/initramfs-tools/modules
     else
         systemctl enable resize2fs_once
-    fi
-
-    if [ "${CUSTOM_IOT}" = "1" ] ; then
-        systemctl disable bluetooth
-        systemctl mask bluetooth
-
-        echo "i2c-bcm2708"  >> /etc/modules
-        # echo "i2c-dev"    >> /etc/modules
-        # echo "rtc-ds1307" >> /etc/modules
-
-        if [ "${ROOTFS_RO}" = "1" ] ; then
-            echo "i2c-bcm2708"  >> /etc/initramfs-tools/modules
-            # echo "i2c-dev"    >> /etc/initramfs-tools/modules
-            # echo "rtc-ds1307" >> /etc/initramfs-tools/modules
-        fi
     fi
 EOF
 
