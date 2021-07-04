@@ -107,7 +107,9 @@ export -f on_chroot
 
 print_issue() {
     echo "Raspberry Pi (Zafena) ${IMG_DATE} UTC"
-    echo "Zafena version ${ZAFENA_VERSION}"
+    if [ -n "${CUSTOM_NAME}" -a -n "${CUSTOM_VERSION}" ]; then
+        echo "${CUSTOM_NAME} version ${CUSTOM_VERSION}"
+    fi
     echo "Generated using ${PI_GEN}, ${PI_GEN_REPO}, ${GIT_HASH}, ${1}"
 
     if [ -f "$ROOTFS_DIR/usr/share/doc/raspberrypi-kernel/changelog.Debian.gz" ]; then
