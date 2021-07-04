@@ -130,8 +130,15 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
     # cp -a "$IMG_FILE_ROOT_EXT4" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_arm64_000/rootfs.img"
     cp -a "$IMG_FILE_ROOT_SQFS_LZO" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_arm64_000/rootfs.img"
 
+    ( cd "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}"; zip -r0 "../${IMG_FILENAME}${IMG_SUFFIX}.sdcard.zip" . )
+
     mv "$IMG_FILE_ROOT_EXT4" "$DEPLOY_DIR2/"
     mv "$IMG_FILE_ROOT_SQFS_GZ" "$DEPLOY_DIR2/"
     mv "$IMG_FILE_ROOT_SQFS_LZO" "$DEPLOY_DIR2/"
     mv "$IMG_FILE_ROOT_SQFS_NONE" "$DEPLOY_DIR2/"
 fi
+
+rm -f "${STAGE_WORK_DIR}/SHA256SUMS"
+( cd "${DEPLOY_DIR2}"; find . -maxdepth 1 -type f -exec sha256sum -b \{\} >> "${STAGE_WORK_DIR}/SHA256SUMS" \; )
+mv "${STAGE_WORK_DIR}/SHA256SUMS" "$DEPLOY_DIR2/"
+
