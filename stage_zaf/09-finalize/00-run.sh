@@ -39,6 +39,19 @@ cat ../files.home/pi/.bashrc_startx                      >> "${ROOTFS_DIR}/home/
 echo $ZAFENA_VERSION                                     >  "${ROOTFS_DIR}/etc/zafena_version"
 
 on_chroot << EOF
+    systemctl disable bluetooth
+    systemctl mask bluetooth
+
+    echo "i2c-bcm2708"  >> /etc/modules
+    # echo "i2c-dev"    >> /etc/modules
+    # echo "rtc-ds1307" >> /etc/modules
+
+    if [ "${ROOTFS_RO}" = "1" ] ; then
+        echo "i2c-bcm2708"  >> /etc/initramfs-tools/modules
+        # echo "i2c-dev"    >> /etc/initramfs-tools/modules
+        # echo "rtc-ds1307" >> /etc/initramfs-tools/modules
+    fi
+
     cd /etc/default
     rm -f ntpdate
     ln -s /boot/zafena/etc/ntpdate .
@@ -49,8 +62,14 @@ on_chroot << EOF
     ln -s .xinitrc .xsession
 
     if [ "${ROOTFS_RO}" = "1" ] ; then
-        # Rebuild `/data/sdcard` (flush stage2's produce)
-        rm -rf                                /data/sdcard
+        # Rebuild `/data/sdcard` and initrd.img (flush stage2's produce)
+        rm -rf /data/sdcard
+        rm -f /boot/sys_arm64_000/initrd.img
+
+        KVERSION=\$(ls /lib/modules/ | tail -n 1)
+        echo "mkinitramfs for kernel version: \${KVERSION}"
+        /usr/sbin/mkinitramfs -o /boot/sys_arm64_000/initrd.img \${KVERSION}
+
         mkdir -p                              /data/sdcard/zafena/data
         find  /boot/ -maxdepth 1 -type f \
               -exec cp -d --preserve=all \{\} /data/sdcard/ \;
