@@ -4,12 +4,14 @@ sdir=`dirname $(readlink -f $0)`
 rootdir=`dirname $sdir`
 
 export CUSTOM_NAME="MyMachine"
-export CUSTOM_VERSION="1.3.0.1"
+export CUSTOM_VERSION="1.1"
 
 export PI_GEN="pi-gen (custom branch)"
 
 # export RELEASE=bullseye
 export RELEASE=buster
+
+export TARGET_ARCH="arm64"
 
 # export APT_PROXY=http://jordan:3142
 
@@ -17,8 +19,8 @@ export RELEASE=buster
 export ROOTFS_RO=1
 export REDUCED_FOOTPRINT=1
 
-export IMG_NAME="zafcon-${CUSTOM_VERSION}"
-export WORK_DIR="/data/zafcon_arm64_${CUSTOM_VERSION}-work"
+export IMG_NAME="${CUSTOM_NAME}-${CUSTOM_VERSION}-${TARGET_ARCH}"
+export WORK_DIR="/data/${CUSTOM_NAME}-${CUSTOM_VERSION}-${TARGET_ARCH}-work"
 export IMG_FILENAME=${IMG_NAME}
 
 export DEPLOY_DIR=/data/diskimages
