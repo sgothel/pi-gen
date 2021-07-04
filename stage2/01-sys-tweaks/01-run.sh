@@ -101,7 +101,7 @@ on_chroot << EOF
 
         sed -i -e 's/#Storage=auto/Storage=volatile/g;s/#Compress=yes/Compress=yes/g;s/#RuntimeMaxUse=/RuntimeMaxUse=1M/g;s/#ForwardToSyslog=yes/ForwardToSyslog=no/g;s/#ForwardToWall=yes/ForwardToWall=no/g' /etc/systemd/journald.conf
 
-        sed -i -e 's/MODULES=most/MODULES=dep/g;s/BUSYBOX=auto/BUSYBOX=y/g' /etc/initramfs-tools/initramfs.conf
+        sed -i -e 's/MODULES=most/MODULES=dep/g;s/BUSYBOX=auto/BUSYBOX=y/g;s/COMPRESS=gzip/COMPRESS=lzop/g' /etc/initramfs-tools/initramfs.conf
 
         echo "squashfs"     >> /etc/modules
         echo "squashfs"     >> /etc/initramfs-tools/modules
