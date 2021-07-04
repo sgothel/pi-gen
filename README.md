@@ -69,6 +69,29 @@ The following environment variables are supported:
    the ssh host keys are retained while `regenerate_ssh_host_keys` is disabled
    and the final `/boot/config.txt` has `splash` disabled (no rainbow).
    
+* `REDUCED_FOOTPRINT` (Default: unset)
+
+   If set to one, i.e. `REDUCED_FOOTPRINT=1`, 
+   installation will attempt to keep the footprint as small as possible.
+   This is intended for small devices, perhaps in addition to `ROOTFS_RO=1`.
+   The following efforts are made:
+    * apt selection without recommended and suggested
+    * apt cache removed
+    * [Reduced Disk Footprint (Ubuntu)](https://wiki.ubuntu.com/ReducingDiskFootprint#Documentation) for 
+      most `/usr/share/doc` and most `locale`s but [ `en*`, `da*`, `de*`, `es*`, `fi*`, `fr*`, `is*`, `nb*`, `ru*`, `sv*`, `zh*` ],
+      i.e. includes [`locale`](https://www.localeplanet.com/icu/) for
+        * English `en`
+        * Danish `da`
+        * German `de`
+        * Icelandic `is`
+        * Spanish `es`
+        * Finnish `fi`
+        * French `fr`
+        * Norwegian Bokmål `nb`
+        * Russia `nb`
+        * Swedish `sv`
+        * Chinese `zh`
+
 * `BASE_QCOW2_SIZE` (Default: 15200M)
 
    Size of the virtual qcow2 disk given in multiples of 1024, i.e. KiB, MiB or GiB.

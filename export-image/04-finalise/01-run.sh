@@ -27,13 +27,15 @@ on_chroot << EOF
         hardlink -t /usr/share/doc
     fi
 
-    # Keep in sync:
-    #  stage0/00-configure-apt/files/01_nodoc 
-    #  export-image/04-finalise/01-run.sh 
-    find /usr/share/doc -depth -type f ! -name copyright|xargs rm || true
-    find /usr/share/doc -empty|xargs rmdir || true
-    rm -rf /usr/share/man /usr/share/groff /usr/share/info /usr/share/lintian /usr/share/linda /var/cache/man
-    find /usr/share/locale -mindepth 1 -maxdepth 1 ! -name 'en' ! -name 'de*' !  -name 'se*' ! -name 'fr*' |xargs rm -r
+    if [ "${REDUCED_FOOTPRINT}" = "1" ]; then
+        # Keep in sync:
+        #  stage0/00-configure-apt/files/01_nodoc 
+        #  export-image/04-finalise/01-run.sh 
+        find /usr/share/doc -depth -type f ! -name copyright|xargs rm || true
+        find /usr/share/doc -empty|xargs rmdir || true
+        rm -rf /usr/share/man /usr/share/groff /usr/share/info /usr/share/lintian /usr/share/linda /var/cache/man
+        find /usr/share/locale -mindepth 1 -maxdepth 1 ! -name 'en*' ! -name 'da*' ! -name 'de*' ! -name 'es*' ! -name 'fi*' ! -name 'fr*' ! -name 'is*' ! -name 'nb*' ! -name 'ru*' !  -name 'sv*' ! -name 'zh*' |xargs rm -r
+    fi
 EOF
 
 if [ -d "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.config" ]; then
