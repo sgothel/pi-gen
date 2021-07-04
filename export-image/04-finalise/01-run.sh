@@ -97,7 +97,7 @@ rm -rf "${DEPLOY_DIR2}"
 mkdir -p "${DEPLOY_DIR2}"
 
 if [ "${ROOTFS_RO}" = "1" ] ; then
-    cp -a "${ROOTFS_DIR}/boot" "${DEPLOY_DIR2}/sdcard-${IMG_SUFFIX}"
+    cp -a "${ROOTFS_DIR}/boot" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}"
 fi
 
 unload_qimage
@@ -111,7 +111,7 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
     mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_LZO}" -comp lzo
     mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_NONE}" -noI -noD -noF -noX
     umount "${ROOTFS_DIR}"
-    cp -a "$INFO_FILE_ROOT" "${DEPLOY_DIR2}/sdcard-${IMG_SUFFIX}/sys_arm64_000/rootfs.inf"
+    cp -a "$INFO_FILE_ROOT" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_arm64_000/rootfs.inf"
 fi
 mv "$INFO_FILE" "$INFO_FILE_ROOT" "$DEPLOY_DIR2/"
 
@@ -127,8 +127,8 @@ fi
 mv "$IMG_FILE" "$DEPLOY_DIR2/"
 
 if [ "${ROOTFS_RO}" = "1" ] ; then
-    # cp -a "$IMG_FILE_ROOT_EXT4" "${DEPLOY_DIR2}/sdcard-${IMG_SUFFIX}/sys_arm64_000/rootfs.img"
-    cp -a "$IMG_FILE_ROOT_SQFS_LZO" "${DEPLOY_DIR2}/sdcard-${IMG_SUFFIX}/sys_arm64_000/rootfs.img"
+    # cp -a "$IMG_FILE_ROOT_EXT4" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_arm64_000/rootfs.img"
+    cp -a "$IMG_FILE_ROOT_SQFS_LZO" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_arm64_000/rootfs.img"
 
     mv "$IMG_FILE_ROOT_EXT4" "$DEPLOY_DIR2/"
     mv "$IMG_FILE_ROOT_SQFS_GZ" "$DEPLOY_DIR2/"
