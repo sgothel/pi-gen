@@ -55,15 +55,29 @@ The following environment variables are supported:
 
 * `ROOTFS_RO` (Default: unset)
 
-   If set to one, i.e. `ROOTFS_RO=1`, the root filesystem will be set read-only
-   and a `tmpfs` creating containing the `overlayfs` mutable storage for
+   If set to one, i.e. `ROOTFS_RO=1`, the root filesystem will be set read-only,
+   an `initramfs` is used to load it via `loopfs` 
+   and a `tmpfs` created at boot containing the `overlayfs` mutable storage for
    ```
    /etc
    /home
    /var
+   /srv
    ```
-   Note that the `/srv` mapping has been excluded here!
+
+   Further all `apt-daily` systemd tasks are disabled,
+   the ssh host keys are retained while `regenerate_ssh_host_keys` is disabled
+   and the final `/boot/config.txt` has `splash` disabled (no rainbow).
    
+* `CUSTOM_IOT` (Default: unset)
+
+   If set to one, i.e. `CUSTOM_IOT=1`, certain embedded low footprint settings
+   will be applied, e.g.:
+   ```
+   - systemctl disable bluetooth
+   - systemctl mask bluetooth
+   - loading module i2c-bcm2708
+   ```
 
 * `BASE_QCOW2_SIZE` (Default: 15200M)
 
