@@ -1,17 +1,13 @@
-#gstreamer1.0-x gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-alsa gstreamer1.0-libav
-#qpdfview gtk2-engines alsa-utils
 alsa-utils
-#desktop-base
 librsvg2-common
 fonts-quicksand
-#git
-#omxplayer
-#raspberrypi-artwork
 policykit-1
-#gvfs
-#chromium rpi-chromium-mods
 gldriver-test
 fonts-droid-fallback
 fonts-liberation2
-#obconf
 arandr
+raspberrypi-net-mods
+tree
+libgl1-mesa-dri libgles1 libgles2-mesa
+mesa-utils
+rp-prefapps

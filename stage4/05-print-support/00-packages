@@ -1,3 +1,2 @@
-#cups
-#cups-common cups-client
-#system-config-printer
+cups
+system-config-printer

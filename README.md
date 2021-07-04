@@ -92,6 +92,12 @@ The following environment variables are supported:
         * Swedish `sv`
         * Chinese `zh`
 
+    It is also **recommended** to not include *stage4* and *stage5* for a small embedded system,
+    as they contain window-manager and broader desktop applications, etc.
+
+    *stage3* contains a minimal *xserver-xorg* subset and *dwm* with *stterm*,
+    suitable for embedded systems using graphics.
+
 * `BASE_QCOW2_SIZE` (Default: 15200M)
 
    Size of the virtual qcow2 disk given in multiples of 1024, i.e. KiB, MiB or GiB.
