@@ -362,7 +362,7 @@ function make_bootable_image() {
             echo "Set UUIDs to make it bootable"
             sed -i "s/BOOTDEV/PARTUUID=${BOOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
             sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
-            sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/boot/cmdline.txt"
+            sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/boot/sys_arm64_000/cmdline.txt"
         fi
     else
         echo "Setup hard devicenames"
@@ -374,7 +374,7 @@ function make_bootable_image() {
         echo "Set hard device names to make it bootable"
         sed -i "s/BOOTDEV/${BOOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
         sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
-        sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/boot/cmdline.txt"
+        sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/boot/sys_arm64_000/cmdline.txt"
     fi
 
 	echo "Umount image"
