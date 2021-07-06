@@ -17,6 +17,12 @@
 #ln -s /boot/var /var
 #mkdir -p /var/log
 
+fatattr +hs /boot/bootcode.bin
+fatattr +hs /boot/config.txt
+find /boot -maxdepth 1 -name \*.dat -exec fatattr +hs \{\} \;
+find /boot -maxdepth 1 -name \*.elf -exec fatattr +hs \{\} \;
+fatattr +hs /boot/sys_arm64_000
+
 python /home/pi/.off_button.py & 
 
 #/usr/bin/fbi -T 1 -noverbose -a /home/pi/splash.png

@@ -79,6 +79,13 @@ on_chroot << EOF
               -exec cp -d --preserve=all \{\} /data/sdcard/ \;
         cp -a /boot/sys_arm64_000             /data/sdcard/
         cp -a /boot/zafena/etc                /data/sdcard/zafena/
+
+        # Not working here: /boot/bootcode.bin: Function not implemented
+        #fatattr +hs /boot/bootcode.bin
+        #fatattr +hs /boot/config.txt
+        #find /boot -maxdepth 1 -name \*.dat -exec fatattr +hs \{\} \;
+        #find /boot -maxdepth 1 -name \*.elf -exec fatattr +hs \{\} \;
+        #fatattr +hs /boot/sys_arm64_000
     fi
 EOF
 
