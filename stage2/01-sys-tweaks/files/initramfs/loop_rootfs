@@ -70,7 +70,7 @@ check_fsfile() {
     fi
     log_success_msg "loop_rootfs image file ${fsfile} of type ${FILE_FSTYPE}."
 
-    if ! fsck -V -t "${FILE_FSTYPE}" "${fsfile}"; then
+    if ! fsck -n -V -t "${FILE_FSTYPE}" "${fsfile}"; then
         log_failure_msg "loop_rootfs image file ${fsfile} fsck failed."
         return 1
     fi
