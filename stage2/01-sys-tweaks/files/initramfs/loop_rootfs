@@ -61,16 +61,27 @@ check_fsfile() {
         log_failure_msg "loop_rootfs image file ${fsfile} doesn't exist."
         return 1
     fi
+    log_success_msg "loop_rootfs image file ${fsfile} exists."
 
     FILE_FSTYPE=$(get_fstype "${fsfile}")
     if [ -z "${FILE_FSTYPE}" -o "${FILE_FSTYPE}" = "unknown" ]; then
         log_failure_msg "loop_rootfs image file ${fsfile} unknown fstype."
         return 1
     fi
+    log_success_msg "loop_rootfs image file ${fsfile} of type ${FILE_FSTYPE}."
 
     if ! fsck -V -t "${FILE_FSTYPE}" "${fsfile}"; then
         log_failure_msg "loop_rootfs image file ${fsfile} fsck failed."
         return 1
+    fi
+    log_success_msg "loop_rootfs image file ${fsfile} fsck OK."
+
+    if [ "${FILE_FSTYPE}" = "squashfs" ]; then
+        if ! unsquashfs -l "${fsfile}" > /dev/null ; then
+            log_failure_msg "loop_rootfs image file ${fsfile} unsquashfs -l failed."
+            return 1
+        fi
+        log_success_msg "loop_rootfs image file ${fsfile} unsquashfs -l OK."
     fi
 
     return 0;
@@ -204,7 +215,7 @@ if [ -f "${OS_PREFIX_FILE_LAST}" ]; then
             OS_PREFIX_LAST=$(cat "${OS_PREFIX_FILE_LAST}")
             IMAGE_FILE="${BOOT_DIR}/${OS_PREFIX_LAST}/rootfs.img"
             if ! check_fsfile "${IMAGE_FILE}"; then
-                # IMAGE_FILE not existing for OS_PREFIX_FILE_LAST or its fstype unknown
+                # IMAGE_FILE not existing for OS_PREFIX_FILE_LAST, corrupt or its fstype unknown
                 # Next: factory default OS_PREFIX_DEFAULT
                 log_failure_msg "loop_rootfs fallback ${OS_PREFIX_LAST} image file ${IMAGE_FILE} non existent or corrupt. Next factory default ${OS_PREFIX_DEFAULT}. Reboot..."
                 fallback_rootfs "${OS_PREFIX}" "${OS_PREFIX_DEFAULT}"

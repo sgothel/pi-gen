@@ -17,6 +17,8 @@ usbutils
 #libraspberrypi-dev libraspberrypi-doc libfreetype6-dev
 libraspberrypi-dev libfreetype6-dev
 dosfstools
+squashfs-tools
+fatattr
 #dphys-swapfile
 bluez
 raspberrypi-sys-mods

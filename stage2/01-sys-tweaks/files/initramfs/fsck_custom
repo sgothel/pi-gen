@@ -7,11 +7,6 @@ prereqs()
 	echo "$PREREQ"
 }
 
-get_fsck_types() {
-	get_fsck_type_fstab /    root
-	get_fsck_type_fstab /usr /usr
-}
-
 case $1 in
 prereqs)
 	prereqs
@@ -20,7 +15,7 @@ prereqs)
 esac
 
 if [ ! -x /sbin/fsck ]; then
-	exit 0
+	exit 1
 fi
 
 . /usr/share/initramfs-tools/scripts/functions
