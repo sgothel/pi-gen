@@ -52,6 +52,10 @@ on_chroot << EOF
         # echo "rtc-ds1307" >> /etc/initramfs-tools/modules
     fi
 
+    cd /etc/wpa_supplicant
+    rm -f wpa_supplicant.conf
+    ln -s /boot/zafena/etc/wpa_supplicant/wpa_supplicant.conf .
+
     cd /etc/default
     rm -f ntpdate
     ln -s /boot/zafena/etc/ntpdate .
