@@ -117,6 +117,7 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
 
     install -m 755 files/initramfs/loop_rootfs 	"${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/"
     install -m 755 files/initramfs/fsck_custom 	"${ROOTFS_DIR}/etc/initramfs-tools/hooks/"
+    install -m 755 files/initramfs/extra_execs  "${ROOTFS_DIR}/etc/initramfs-tools/hooks/"
 else
     install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/"
     install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/sys_arm64_000/"
