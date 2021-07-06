@@ -70,7 +70,7 @@ check_fsfile() {
     fi
     log_success_msg "loop_rootfs image file ${fsfile} of type ${FILE_FSTYPE}."
 
-    if ! fsck -V -t "${FILE_FSTYPE}" "${fsfile}"; then
+    if ! fsck -n -V -t "${FILE_FSTYPE}" "${fsfile}"; then
         log_failure_msg "loop_rootfs image file ${fsfile} fsck failed."
         return 1
     fi
@@ -176,6 +176,18 @@ fallback_rootfs() {
     exit 1
 }
 
+tee_date() {
+    ( while IFS= read -p -r line; do
+        printf '%s %s\n' "$(date -u +"%Y-%m-%d %H:%M:%S")" "$line"
+      done ) | tee -a $1
+}
+
+add_date() {
+    ( while IFS= read -r line; do
+        printf '%s %s\n' "$(date -u +"%Y-%m-%d %H:%M:%S")" "$line"
+    done ) >> $1
+}
+
 if [ "${ROOT}" != "file" ]; then
     log_begin_msg "loop_rootfs skip non file ROOT ${ROOT}"
     log_end_msg
@@ -194,6 +206,35 @@ if ! mount ${BOOT_PART} ${BOOT_DIR}; then
     panic "loop_rootfs could not mount /boot."
     exit 1
 fi
+
+# Make the 'debug' output file persistent, append
+if [ -f /run/initramfs/initramfs.debug ]; then
+    add_date ${BOOT_DIR}/init_debug.log < /run/initramfs/initramfs.debug &
+fi
+
+quiet_orig="${quiet}"
+quiet=n
+
+# Bash Process Substitution to redir stdout/err to tee process,
+# copying to file and console:
+#   exec &> >(tee -a ${BOOT_DIR}/initrd.log)
+#
+# But we ain't no bash, do a manual pipe instead
+FIFO_OUT="/run/initramfs/out.fifo"
+mkfifo "${FIFO_OUT}"
+trap 'rm "${FIFO_OUT}"' EXIT
+
+if [ "${quiet_orig}" = "y" -o -n "${log_output}" ]; then
+    # Originally quiet was explicitly requested, only redir to file
+    # and leave console quiet.
+    # Same for debug log_output, as it redirects output already to tmpfs file.
+    add_date ${BOOT_DIR}/init_rootfs.log < "${FIFO_OUT}" &
+    # add_date ${BOOT_DIR}/init_rootfs.log < "${FIFO_ERR}" >&2 &
+else
+    tee_date ${BOOT_DIR}/init_rootfs.log < "${FIFO_OUT}" &
+    # tee_date ${BOOT_DIR}/init_rootfs.log < "${FIFO_ERR}" >&2 &
+fi
+exec >${FIFO_OUT} 2>&1
 
 if [ ! -f "${CONFIG_FILE}" ]; then
     panic "loop_rootfs could not find ${CONFIG_FILE}."
@@ -262,5 +303,6 @@ log_success_msg "loop_rootfs attached ${OS_PREFIX}, ${ROOTFSTYPE} file ${IMAGE_F
 
 log_end_msg
 
+quiet="${quiet_orig}"
 exit 0
 
