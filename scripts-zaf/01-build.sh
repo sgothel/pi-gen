@@ -5,7 +5,7 @@ rootdir=`dirname $sdir`
 
 export CUSTOM_NAME="Zafena"
 # Zafena Version: major-version . minor.version - client . client-build
-export CUSTOM_VERSION="1.4-0.1"
+export CUSTOM_VERSION="1.4-0.2"
 
 export PI_GEN="pi-gen (${CUSTOM_NAME} branch)"
 export PI_GEN_REPO="http://kontorsserver.zafena.se/sgothel/pi-gen"
