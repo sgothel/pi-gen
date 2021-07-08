@@ -32,6 +32,8 @@ fi
 on_chroot << EOF
     systemctl disable hwclock.sh
 
+    systemctl disable rsync
+    systemctl mask rsync
     systemctl disable nfs-common
     systemctl mask nfs-common
     systemctl disable rpcbind

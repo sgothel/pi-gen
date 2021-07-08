@@ -185,7 +185,11 @@ EOF
 				sync
 				kpartx -a $NBD_DEV
 				mkfs.fat -n BOOT -F 32 -v $MAP_BOOT_DEV
-				mkfs.ext4 -L ROOTFS -m 0 -O "^has_journal,^metadata_csum,^64bit" $MAP_ROOT_DEV
+                if [ "${ROOTFS_RO}" = "1" ] ; then
+                    mkfs.ext4 -L ROOTFS -m 0 -O "^has_journal,^metadata_csum,^64bit" $MAP_ROOT_DEV
+                else
+                    mkfs.ext4 -L ROOTFS -O "^has_journal,^metadata_csum,^64bit" $MAP_ROOT_DEV
+                fi
 				sync
 			else
 				if [ ! -f "${WORK_DIR}/image-${PREV_STAGE}.qcow2" ]; then
