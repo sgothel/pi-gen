@@ -12,7 +12,7 @@ lua5.1
 luajit
 hardlink ca-certificates curl
 fake-hwclock
-#nfs-common
+nfs-common
 usbutils
 #libraspberrypi-dev libraspberrypi-doc libfreetype6-dev
 libraspberrypi-dev libfreetype6-dev
@@ -29,8 +29,8 @@ usb-modeswitch
 libpam-chksshpwd
 rpi-update
 libmtp-runtime
-#rsync
-htop
+rsync
+htop iotop powertop
 man-db
 policykit-1
 ssh-import-id
