@@ -39,6 +39,8 @@ cat ../files.home/pi/.bashrc_startx                      >> "${ROOTFS_DIR}/home/
 echo $ZAFENA_VERSION                                     >  "${ROOTFS_DIR}/etc/zafena_version"
 
 on_chroot << EOF
+    dpkg -P nfs-common rpcbind rsync
+
     systemctl disable bluetooth
     systemctl mask bluetooth
 
