@@ -4,12 +4,12 @@ sdir=`dirname $(readlink -f $0)`
 rootdir=`dirname $sdir`
 
 export CUSTOM_NAME="MyMachine"
-export CUSTOM_VERSION="1.1"
+export CUSTOM_VERSION="1.1-ro"
 
 export PI_GEN="pi-gen (custom branch)"
 
-# export RELEASE=bullseye
-export RELEASE=buster
+export RELEASE=bullseye
+# export RELEASE=buster
 
 export TARGET_ARCH="arm64"
 
@@ -28,7 +28,7 @@ export DEPLOY_ZIP=0
 
 #export USE_QEMU=1
 
-export TARGET_HOSTNAME=my502
+export TARGET_HOSTNAME=raspi04
 
 export LOCALE_DEFAULT=en_US.UTF-8
 export KEYBOARD_KEYMAP=us
@@ -45,6 +45,7 @@ export ENABLE_SSH=1
 export STAGE_LIST="stage0 stage1 stage2 stage3a stage3b"
 
 touch ${rootdir}/stage2/SKIP_IMAGES
+touch ${rootdir}/stage3a/SKIP_IMAGES
 # touch ${rootdir}/stage3b/SKIP_IMAGES
 # touch ${rootdir}/stage4/SKIP_IMAGES
 

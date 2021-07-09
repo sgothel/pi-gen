@@ -16,12 +16,17 @@ EOF
 
 			log "End ${SUB_STAGE_DIR}/${i}-debconf"
 		fi
-		if [ -f "${i}-packages-nr" ]; then
-			log "Begin ${SUB_STAGE_DIR}/${i}-packages-nr"
-			PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${i}-packages-nr")"
+		if [ -f "${i}-packages-nr" -o -f "${i}-packages-nr-${RELEASE}" ]; then
+            if [ -f "${i}-packages-nr-${RELEASE}" ]; then
+                packfile="${i}-packages-nr-${RELEASE}"
+            else
+                packfile="${i}-packages-nr"
+            fi
+			log "Begin ${SUB_STAGE_DIR}/${packfile}"
+			PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${packfile}")"
 			if [ -n "$PACKAGES" ]; then
 				on_chroot << EOF
-echo "Installing PACKAGES-nr '${PACKAGES}'"
+echo "Installing ${packfile} '${PACKAGES}'"
 apt-get -o APT::Acquire::Retries=3 install --no-install-recommends -y $PACKAGES
 EOF
 				if [ "${USE_QCOW2}" = "1" ]; then
@@ -30,17 +35,23 @@ apt-get clean
 EOF
 				fi
 			fi
-			log "End ${SUB_STAGE_DIR}/${i}-packages-nr"
+			log "End ${SUB_STAGE_DIR}/${packfile}"
 		fi
-		if [ -f "${i}-packages" ]; then
-			log "Begin ${SUB_STAGE_DIR}/${i}-packages"
-			PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${i}-packages")"
+		if [ -f "${i}-packages" -o -f "${i}-packages-${RELEASE}" ]; then
+            if [ -f "${i}-packages-${RELEASE}" ]; then
+                packfile="${i}-packages-${RELEASE}"
+            else
+                packfile="${i}-packages"
+            fi
+			log "Begin ${SUB_STAGE_DIR}/${packfile}"
+			PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${packfile}")"
 			if [ -n "$PACKAGES" ]; then
 				on_chroot << EOF
-echo "Installing PACKAGES '${PACKAGES}'"
-if [ "${REDUCED_FOOTPRINT}" = "1" ]; then
+echo "Installing ${packfile} '${PACKAGES}'"
+if [ "${INSTALL_RECOMMENDS}" != "1" -o "${REDUCED_FOOTPRINT}" = "1" ]; then
     apt-get -o APT::Acquire::Retries=3 install --no-install-recommends -y $PACKAGES
 else
+    # "${INSTALL_RECOMMENDS}" = "1" -a "${REDUCED_FOOTPRINT}" != "1"
     apt-get -o APT::Acquire::Retries=3 install -y $PACKAGES
 fi
 EOF
@@ -50,7 +61,7 @@ apt-get clean
 EOF
 				fi
 			fi
-			log "End ${SUB_STAGE_DIR}/${i}-packages"
+			log "End ${SUB_STAGE_DIR}/${packfile}"
 		fi
 		if [ -d "${i}-patches" ]; then
 			log "Begin ${SUB_STAGE_DIR}/${i}-patches"
@@ -242,6 +253,23 @@ export QUILT_PATCHES
 export QUILT_NO_DIFF_INDEX=1
 export QUILT_NO_DIFF_TIMESTAMPS=1
 export QUILT_REFRESH_ARGS="-p ab"
+
+if [ -z "${IS_TESTING}" ]; then
+    IS_TESTING=
+    case "${RELEASE}" in
+        "jessie")
+            IS_TESTING=0 ;;
+        "stretch")
+            IS_TESTING=0 ;;
+        "buster")
+            IS_TESTING=0 ;;
+        "bullseye")
+            IS_TESTING=1 ;;
+        *)
+            IS_TESTING=1 ;;
+    esac
+fi
+export IS_TESTING
 
 # shellcheck source=scripts/common
 source "${SCRIPT_DIR}/common"
