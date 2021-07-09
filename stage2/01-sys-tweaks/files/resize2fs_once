@@ -12,10 +12,33 @@
 case "$1" in
   start)
     log_daemon_msg "Starting resize2fs_once"
-    ROOT_DEV=$(findmnt / -o source -n) &&
-    resize2fs $ROOT_DEV &&
-    update-rc.d resize2fs_once remove &&
-    rm /etc/init.d/resize2fs_once &&
+    ROOT_PART=$(findmnt / -o source -n)
+    ROOT_DEV_BASE=`lsblk -asr ${ROOT_PART} | tail -1 | awk ' { print $1 }'`
+    ROOT_DEV="/dev/${ROOT_DEV_BASE}"
+    # Test ROOT_DEV deduction: (1) substring
+    if [ -n "${ROOT_PART} -a -n "${ROOT_DEV} -a -z "${ROOT_PART##*"${ROOT_DEV}"*}" ]; then
+        PARTED_OUT=`parted -s -m $ROOT_DEV unit B print`
+	    PART_NO=`echo "$PARTED_OUT" | grep ext4 | awk -F: ' { print $1 } '`
+        # Test ROOT_DEV deduction: (2) identified partition number
+        if [ "${ROOT_PART}" = "${ROOT_DEV}p${PART_NO}" -o "${ROOT_PART}" = "${ROOT_DEV}${PART_NO}" ]; then
+            PART_END=`echo "${PARTED_OUT}" | grep "^${PART_NO}:" | awk -F: ' { print substr($3,1,length($3)-1) } '`
+            PART_NEW_END=`parted -s -m $ROOT_DEV unit B print free | tail -1 | awk -F: ' { print substr($3,1,length($3)-1) } '`
+            if [ -n "${PART_END}" -a -n "${PART_NEW_END}" -a ${PART_NEW_END} -gt ${PART_END} ]; then
+                echo "Resize partition ${PART_NO} from ${PART_END} to ${PART_NEW_END}"
+                parted -s $ROOT_DEV unit B resizepart ${PART_NO} ${PART_NEW_END}
+                echo "Resize fs on partition ${PART_NO}, ${ROOT_PART}"
+                resize2fs $ROOT_PART
+            else
+                echo "Resize partition 2 requirement failed: End ${PART_END} < new_end ${PART_NEW_END}"
+            fi
+        else
+            echo "ROOT_PART ${ROOT_PART} not matching partition ${PART_NO} of ROOT_DEV ${ROOT_DEV}."
+        fi
+    else
+        echo "ROOT_DEV ${ROOT_DEV} not a substring of ROOT_PART ${ROOT_PART}."
+    fi
+    update-rc.d resize2fs_once remove
+    rm -f /etc/init.d/resize2fs_once
     log_end_msg $?
     ;;
   *)

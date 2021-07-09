@@ -31,7 +31,7 @@ libpam-chksshpwd
 rpi-update
 libmtp-runtime
 rsync
-htop iotop powertop
+htop iotop powertop iftop
 man-db
 policykit-1
 ssh-import-id
