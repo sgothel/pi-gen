@@ -87,7 +87,7 @@ disable_overscan=1
 # See https://github.com/raspberrypi/firmware/issues/397#issuecomment-94574578
 
 # Turns off the bcm2835-sdhost SD/MMC DMA mode, enforces PIO mode
-dtoverlay=sdtweak,force_pio=1
+#dtparam=sd_debug=on
 #dtparam=sd_force_pio=on
 
 #dtparam=i2s=on
