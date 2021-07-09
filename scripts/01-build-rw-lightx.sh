@@ -42,10 +42,11 @@ export ENABLE_SSH=1
 # export PUBKEY_ONLY_SSH=1
 
 # export STAGE_LIST="stage0 stage1 stage2 stage3a stage3b stage4 stage5"
-export STAGE_LIST="stage0 stage1 stage2 stage3a"
+export STAGE_LIST="stage0 stage1 stage2 stage3a stage3a_dev"
 
 touch ${rootdir}/stage2/SKIP_IMAGES
-# touch ${rootdir}/stage3a/SKIP_IMAGES
+touch ${rootdir}/stage3a/SKIP_IMAGES
+# touch ${rootdir}/stage3a_dev/SKIP_IMAGES
 # touch ${rootdir}/stage3b/SKIP_IMAGES
 # touch ${rootdir}/stage4/SKIP_IMAGES
 

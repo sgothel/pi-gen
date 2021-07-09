@@ -7,6 +7,7 @@ touch ${rootdir}/stage0/SKIP
 touch ${rootdir}/stage1/SKIP
 touch ${rootdir}/stage2/SKIP
 touch ${rootdir}/stage3a/SKIP
+touch ${rootdir}/stage3a_dev/SKIP
 touch ${rootdir}/stage3b/SKIP
 touch ${rootdir}/stage4/SKIP
 touch ${rootdir}/stage5/SKIP
@@ -14,8 +15,10 @@ touch ${rootdir}/stage_zaf/SKIP
 
 touch ${rootdir}/stage2/SKIP_IMAGES
 touch ${rootdir}/stage3a/SKIP_IMAGES
+touch ${rootdir}/stage3a_dev/SKIP_IMAGES
 touch ${rootdir}/stage3b/SKIP_IMAGES
 touch ${rootdir}/stage4/SKIP_IMAGES
+touch ${rootdir}/stage_zaf/SKIP_IMAGES
 
 echo SKIP Entries:
 find ${rootdir} -name SKIP

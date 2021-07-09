@@ -1,12 +1,12 @@
 # pi-gen
 
-Tool used to create Raspberry Pi OS images. (Previously known as Raspbian).
+Tool used to create a Debian and Raspberry Pi derived OS images.
 
 
 ## Dependencies
 
 pi-gen runs on Debian-based operating systems. Currently it is only supported on
-either Debian Buster or Ubuntu Xenial and is known to have issues building on
+either Debian Buster or Debian Bullseye and is known to have issues building on
 earlier releases of these systems. On other Linux distributions it may be possible
 to use the Docker build described below.
 
@@ -15,7 +15,7 @@ To install the required dependencies for `pi-gen` you should run:
 ```bash
 apt-get install coreutils quilt parted qemu-user-static debootstrap zerofree zip \
 dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc \
-qemu-utils kpartx
+qemu-utils kpartx squashfs-tools fatattr
 ```
 
 The file `depends` contains a list of tools needed.  The format of this
@@ -53,6 +53,15 @@ The following environment variables are supported:
    but you should use something else for a customized version.  Export files
    in stages may add suffixes to `IMG_NAME`.
 
+* `INSTALL_RECOMMENDS` (Default: unset)
+
+   If set to one, i.e. `INSTALL_RECOMMENDS=1`, 
+   installation process will install recommended packages.
+   Otherwise (default):
+    * apt selection without recommended and suggested
+
+   Note: `apt cache` is disabled for all target configurations.
+
 * `ROOTFS_RO` (Default: unset)
 
    If set to one, i.e. `ROOTFS_RO=1`, the root filesystem will be set read-only,
@@ -69,15 +78,6 @@ The following environment variables are supported:
    the ssh host keys are retained while `regenerate_ssh_host_keys` is disabled
    and the final `/boot/config.txt` has `splash` disabled (no rainbow).
    
-* `INSTALL_RECOMMENDS` (Default: unset)
-
-   If set to one, i.e. `INSTALL_RECOMMENDS=1`, 
-   installation process will install recommended packages.
-   Otherwise (default):
-    * apt selection without recommended and suggested
-
-   Note: `apt cache` is disabled for all target configurations.
-
 * `REDUCED_FOOTPRINT` (Default: unset)
 
    If set to one, i.e. `REDUCED_FOOTPRINT=1`, 
@@ -103,10 +103,7 @@ The following environment variables are supported:
     It is also **recommended** to not include *stage3b* *stage4* and *stage5* for a small embedded system,
     as they contain heavy window-manager and broader desktop applications, etc.
 
-    *stage3a* contains a minimal *xserver-xorg* subset and *dwm* with *stterm*,
-    suitable for embedded systems using graphics.
-
-    *stage3b* contains a full *lightdm*, *lxde* and *desktop-base*
+    See detailed notes on stages below.
 
    Note: `apt cache` is disabled for all target configurations.
 
@@ -131,8 +128,8 @@ The following environment variables are supported:
 
 * `RELEASE` (Default: buster)
 
-   The release version to build images against. Valid values are jessie, stretch
-   buster, bullseye, and testing.
+   The release version to build images against. Valid values are jessie, stretch,
+   buster and bullseye
 
  * `APT_PROXY` (Default: unset)
 
@@ -354,7 +351,7 @@ The build of Raspbian is divided up into several stages for logical clarity
 and modularity.  This causes some initial complexity, but it simplifies
 maintenance and allows for more easy customization.
 
- - **Stage 0** - bootstrap.  The primary purpose of this stage is to create a
+ - **stage0** - bootstrap.  The primary purpose of this stage is to create a
    usable filesystem.  This is accomplished largely through the use of
    `debootstrap`, which creates a minimal filesystem suitable for use as a
    base.tgz on Debian systems.  This stage also configures apt settings and
@@ -362,7 +359,7 @@ maintenance and allows for more easy customization.
    minimal core is installed but not configured, and the system will not quite
    boot yet.
 
- - **Stage 1** - truly minimal system.  This stage makes the system bootable by
+ - **stage1** - truly minimal system.  This stage makes the system bootable by
    installing system files like `/etc/fstab`, configures the bootloader, makes
    the network operable, and installs packages like raspi-config.  At this
    stage the system should boot to a local console from which you have the
@@ -371,31 +368,31 @@ maintenance and allows for more easy customization.
    really usable yet in a traditional sense yet.  Still, if you want minimal,
    this is minimal and the rest you could reasonably do yourself as sysadmin.
 
- - **Stage 2** - lite system.  This stage produces the Raspbian-Lite image.  It
+ - **stage2** - lite system.  This stage produces the Raspbian-Lite image.  It
    installs some optimized memory functions, sets timezone and charmap
    defaults, installs fake-hwclock and ntp, wireless LAN and bluetooth support,
    dphys-swapfile, and other basics for managing the hardware.  It also
    creates necessary groups and gives the pi user access to sudo and the
    standard console hardware permission groups.
 
-   There are a few tools that may not make a whole lot of sense here for
-   development purposes on a minimal system such as basic Python and Lua
-   packages as well as the `build-essential` package.  They are lumped right
-   in with more essential packages presently, though they need not be with
-   pi-gen.  These are understandable for Raspbian's target audience, but if
-   you were looking for something between truly minimal and Raspbian-Lite,
-   here's where you start trimming.
+   Python and Lua are included here, as they are often required by certain setup scripts.
 
- - **Stage 3** - desktop system.  Here's where you get the full desktop system
+ - **stage3a** - litex system. Contains a minimal *xserver-xorg* subset and *dwm* with *stterm*,
+    suitable for embedded systems using graphics.
+
+ - **stage3a_dev** - litexdev system. Contains full commandline development tools
+   and developer library packages based on *stage3a* inclusive *build-essential*, gcc, clang, OpenJDK 11, etc.
+
+ - **stage3b** - desktop system. Contains a complete desktop system
    with X11 and LXDE, web browsers, git for development, Raspbian custom UI
    enhancements, etc.  This is a base desktop system, with some development
    tools installed.
 
- - **Stage 4** - Normal Raspbian image. System meant to fit on a 4GB card. This is the
+ - **stage4** - Normal Raspbian image. System meant to fit on a 4GB card. This is the
    stage that installs most things that make Raspbian friendly to new
    users like system documentation.
 
- - **Stage 5** - The Raspbian Full image. More development
+ - **stage5** - The Raspbian Full image. More development
    tools, an email client, learning tools like Scratch, specialized packages
    like sonic-pi, office productivity, etc.  
 
