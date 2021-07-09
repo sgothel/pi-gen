@@ -13,6 +13,8 @@ touch ${rootdir}/stage5/SKIP
 touch ${rootdir}/stage_zaf/SKIP
 
 touch ${rootdir}/stage2/SKIP_IMAGES
+touch ${rootdir}/stage3a/SKIP_IMAGES
+touch ${rootdir}/stage3b/SKIP_IMAGES
 touch ${rootdir}/stage4/SKIP_IMAGES
 
 echo SKIP Entries:
