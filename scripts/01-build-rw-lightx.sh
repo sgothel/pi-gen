@@ -4,7 +4,7 @@ sdir=`dirname $(readlink -f $0)`
 rootdir=`dirname $sdir`
 
 export CUSTOM_NAME="MyMachine"
-export CUSTOM_VERSION="2.1"
+export CUSTOM_VERSION="1.1-rw"
 
 export PI_GEN="pi-gen (custom branch)"
 
@@ -13,7 +13,7 @@ export RELEASE=buster
 
 export TARGET_ARCH="arm64"
 
-export APT_PROXY=http://jordan:3142
+# export APT_PROXY=http://jordan:3142
 
 # Produce a read-only rootfs
 # export ROOTFS_RO=1
