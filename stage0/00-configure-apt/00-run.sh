@@ -1,6 +1,10 @@
 #!/bin/bash -e
 
-install -m 644 files/sources.list "${ROOTFS_DIR}/etc/apt/"
+if [ "${IS_TESTING}" = "1" ]; then
+    install -m 644 files/sources-testing.list "${ROOTFS_DIR}/etc/apt/"
+else
+    install -m 644 files/sources-stable.list "${ROOTFS_DIR}/etc/apt/"
+fi
 install -m 644 files/raspi.list "${ROOTFS_DIR}/etc/apt/sources.list.d/"
 sed -i "s/RELEASE/${RELEASE}/g" "${ROOTFS_DIR}/etc/apt/sources.list"
 sed -i "s/RELEASE/${RELEASE}/g" "${ROOTFS_DIR}/etc/apt/sources.list.d/raspi.list"

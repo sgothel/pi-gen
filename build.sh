@@ -16,12 +16,17 @@ EOF
 
 			log "End ${SUB_STAGE_DIR}/${i}-debconf"
 		fi
-		if [ -f "${i}-packages-nr" ]; then
-			log "Begin ${SUB_STAGE_DIR}/${i}-packages-nr"
-			PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${i}-packages-nr")"
+		if [ -f "${i}-packages-nr" -o -f "${i}-packages-nr-${RELEASE}" ]; then
+            if [ -f "${i}-packages-nr-${RELEASE}" ]; then
+                packfile="${i}-packages-nr-${RELEASE}"
+            else
+                packfile="${i}-packages-nr"
+            fi
+			log "Begin ${SUB_STAGE_DIR}/${packfile}"
+			PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${packfile}")"
 			if [ -n "$PACKAGES" ]; then
 				on_chroot << EOF
-echo "Installing PACKAGES-nr '${PACKAGES}'"
+echo "Installing ${packfile} '${PACKAGES}'"
 apt-get -o APT::Acquire::Retries=3 install --no-install-recommends -y $PACKAGES
 EOF
 				if [ "${USE_QCOW2}" = "1" ]; then
@@ -30,14 +35,19 @@ apt-get clean
 EOF
 				fi
 			fi
-			log "End ${SUB_STAGE_DIR}/${i}-packages-nr"
+			log "End ${SUB_STAGE_DIR}/${packfile}"
 		fi
-		if [ -f "${i}-packages" ]; then
-			log "Begin ${SUB_STAGE_DIR}/${i}-packages"
-			PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${i}-packages")"
+		if [ -f "${i}-packages" -o -f "${i}-packages-${RELEASE}" ]; then
+            if [ -f "${i}-packages-${RELEASE}" ]; then
+                packfile="${i}-packages-${RELEASE}"
+            else
+                packfile="${i}-packages"
+            fi
+			log "Begin ${SUB_STAGE_DIR}/${packfile}"
+			PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${packfile}")"
 			if [ -n "$PACKAGES" ]; then
 				on_chroot << EOF
-echo "Installing PACKAGES '${PACKAGES}'"
+echo "Installing ${packfile} '${PACKAGES}'"
 if [ "${REDUCED_FOOTPRINT}" = "1" ]; then
     apt-get -o APT::Acquire::Retries=3 install --no-install-recommends -y $PACKAGES
 else
@@ -50,7 +60,7 @@ apt-get clean
 EOF
 				fi
 			fi
-			log "End ${SUB_STAGE_DIR}/${i}-packages"
+			log "End ${SUB_STAGE_DIR}/${packfile}"
 		fi
 		if [ -d "${i}-patches" ]; then
 			log "Begin ${SUB_STAGE_DIR}/${i}-patches"
