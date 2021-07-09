@@ -13,6 +13,7 @@ luajit
 hardlink ca-certificates curl
 fake-hwclock
 nfs-common
+autofs
 usbutils
 #libraspberrypi-dev libraspberrypi-doc libfreetype6-dev
 libraspberrypi-dev libfreetype6-dev
