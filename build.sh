@@ -48,9 +48,10 @@ EOF
 			if [ -n "$PACKAGES" ]; then
 				on_chroot << EOF
 echo "Installing ${packfile} '${PACKAGES}'"
-if [ "${REDUCED_FOOTPRINT}" = "1" ]; then
+if [ "${INSTALL_RECOMMENDS}" != "1" -o "${REDUCED_FOOTPRINT}" = "1" ]; then
     apt-get -o APT::Acquire::Retries=3 install --no-install-recommends -y $PACKAGES
 else
+    # "${INSTALL_RECOMMENDS}" = "1" -a "${REDUCED_FOOTPRINT}" != "1"
     apt-get -o APT::Acquire::Retries=3 install -y $PACKAGES
 fi
 EOF

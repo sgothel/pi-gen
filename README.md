@@ -69,6 +69,15 @@ The following environment variables are supported:
    the ssh host keys are retained while `regenerate_ssh_host_keys` is disabled
    and the final `/boot/config.txt` has `splash` disabled (no rainbow).
    
+* `INSTALL_RECOMMENDS` (Default: unset)
+
+   If set to one, i.e. `INSTALL_RECOMMENDS=1`, 
+   installation process will install recommended packages.
+   Otherwise (default):
+    * apt selection without recommended and suggested
+
+   Note: `apt cache` is disabled for all target configurations.
+
 * `REDUCED_FOOTPRINT` (Default: unset)
 
    If set to one, i.e. `REDUCED_FOOTPRINT=1`, 
@@ -76,7 +85,6 @@ The following environment variables are supported:
    This is intended for small devices, perhaps in addition to `ROOTFS_RO=1`.
    The following efforts are made:
     * apt selection without recommended and suggested
-    * apt cache removed
     * [Reduced Disk Footprint (Ubuntu)](https://wiki.ubuntu.com/ReducingDiskFootprint#Documentation) for 
       most `/usr/share/doc` and most `locale`s but [ `en*`, `da*`, `de*`, `es*`, `fi*`, `fr*`, `is*`, `nb*`, `ru*`, `sv*`, `zh*` ],
       i.e. includes [`locale`](https://www.localeplanet.com/icu/) for
@@ -99,6 +107,8 @@ The following environment variables are supported:
     suitable for embedded systems using graphics.
 
     *stage3b* contains a full *lightdm*, *lxde* and *desktop-base*
+
+   Note: `apt cache` is disabled for all target configurations.
 
 * `BASE_QCOW2_SIZE` (Default: 15200M)
 

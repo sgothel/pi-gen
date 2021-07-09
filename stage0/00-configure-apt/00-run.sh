@@ -16,10 +16,15 @@ else
 	rm -f "${ROOTFS_DIR}/etc/apt/apt.conf.d/51cache"
 fi
 
-if [ "${REDUCED_FOOTPRINT}" = "1" ]; then
-    install -m 644 files/00default-selection "${ROOTFS_DIR}/etc/apt/apt.conf.d/00default-selection"
-    install -m 644 files/02nocache           "${ROOTFS_DIR}/etc/apt/apt.conf.d/02nocache"
+# Disable apt caching in general
+install -m 644 files/02nocache "${ROOTFS_DIR}/etc/apt/apt.conf.d/02nocache"
 
+if [ "${INSTALL_RECOMMENDS}" != "1" -o "${REDUCED_FOOTPRINT}" = "1" ]; then
+    # Drop recommended packages if using reduced footprint or not explicitly selected
+    install -m 644 files/00default-selection "${ROOTFS_DIR}/etc/apt/apt.conf.d/00default-selection"
+fi
+
+if [ "${REDUCED_FOOTPRINT}" = "1" ]; then
     install -m 644 files/01_nodoc            "${ROOTFS_DIR}/etc/dpkg/dpkg.cfg.d/01_nodoc"
 fi
 
