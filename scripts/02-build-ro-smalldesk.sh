@@ -8,8 +8,8 @@ export CUSTOM_VERSION="1.1-ro"
 
 export PI_GEN="pi-gen (custom branch)"
 
-# export RELEASE=bullseye
-export RELEASE=buster
+export RELEASE=bullseye
+# export RELEASE=buster
 
 export TARGET_ARCH="arm64"
 
