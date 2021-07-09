@@ -196,10 +196,10 @@ EOF
 				kpartx -a $NBD_DEV
 				mkfs.fat -n BOOT -F 32 -v $MAP_BOOT_DEV
                 if [ "${ROOTFS_RO}" = "1" ] ; then
-                    # Set reserved-blocks-percentage for root to zero
-                    mkfs.ext4 -L ROOTFS -m 0 -O "^has_journal,^metadata_csum,^64bit" $MAP_ROOT_DEV
+                    # Set reserved-blocks-percentage for root to zero, no journaling
+                    mkfs.ext4 -L ROOTFS -m 0 -O "^has_journal,^huge_file,^metadata_csum,^64bit" $MAP_ROOT_DEV
                 else
-                    mkfs.ext4 -L ROOTFS -O "^has_journal,^metadata_csum,^64bit" $MAP_ROOT_DEV
+                    mkfs.ext4 -L ROOTFS -O "^huge_file,^metadata_csum,^64bit" $MAP_ROOT_DEV
                 fi
 				sync
 			else
