@@ -253,6 +253,22 @@ export QUILT_NO_DIFF_INDEX=1
 export QUILT_NO_DIFF_TIMESTAMPS=1
 export QUILT_REFRESH_ARGS="-p ab"
 
+if [ -z "${IS_TESTING}" ]; then
+    IS_TESTING=
+    case "${RELEASE}" in
+        "jessie")
+        "stretch")
+        "buster")
+            IS_TESTING=0
+        ;;
+        "bullseye")
+        *)
+            IS_TESTING=1
+        ;;
+    esac
+fi
+export IS_TESTING
+
 # shellcheck source=scripts/common
 source "${SCRIPT_DIR}/common"
 # shellcheck source=scripts/dependencies_check
