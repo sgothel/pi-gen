@@ -1,6 +1,6 @@
 # pi-gen
 
-Tool used to create a Debian and Raspberry Pi derived OS images.
+Tool used to create Debian and Raspberry Pi derived OS images.
 
 
 ## Dependencies
