@@ -177,15 +177,26 @@ load_qimage() {
 				sync
 				qemu-nbd --discard=unmap -c $NBD_DEV image-${STAGE}.qcow2
 				sync
-                # 1 boot (7100 MiB), rootfs (remainder of BASE_QCOW2_SIZE)
-				sfdisk $NBD_DEV << EOF
+
+                if [ "${ROOTFS_RO}" = "1" ] ; then
+                    # 1 boot (7100 MiB), rootfs (remainder of BASE_QCOW2_SIZE)
+                    sfdisk $NBD_DEV << EOF
 4MiB,7100MiB,c,*
 7104MiB,,83;
 EOF
+                else
+                    # 1 boot (250 MiB), rootfs (remainder of BASE_QCOW2_SIZE)
+                    sfdisk $NBD_DEV << EOF
+4MiB,250MiB,c,*
+254MiB,,83;
+EOF
+                fi
 				sync
+
 				kpartx -a $NBD_DEV
 				mkfs.fat -n BOOT -F 32 -v $MAP_BOOT_DEV
                 if [ "${ROOTFS_RO}" = "1" ] ; then
+                    # Set reserved-blocks-percentage for root to zero
                     mkfs.ext4 -L ROOTFS -m 0 -O "^has_journal,^metadata_csum,^64bit" $MAP_ROOT_DEV
                 else
                     mkfs.ext4 -L ROOTFS -O "^has_journal,^metadata_csum,^64bit" $MAP_ROOT_DEV
