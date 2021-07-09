@@ -47,6 +47,8 @@ export STAGE_LIST="stage0 stage1 stage2 stage3a stage_zaf"
 #export STAGE_LIST="stage0 stage1 stage2"
 
 touch ${rootdir}/stage2/SKIP_IMAGES
+touch ${rootdir}/stage3a/SKIP_IMAGES
+# touch ${rootdir}/stage3a_dev/SKIP_IMAGES
 # touch ${rootdir}/stage3b/SKIP_IMAGES
 # touch ${rootdir}/stage4/SKIP_IMAGES
 
