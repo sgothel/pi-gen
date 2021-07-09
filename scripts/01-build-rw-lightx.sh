@@ -17,7 +17,7 @@ export TARGET_ARCH="arm64"
 
 # Produce a read-only rootfs
 # export ROOTFS_RO=1
-export REDUCED_FOOTPRINT=1
+# export REDUCED_FOOTPRINT=1
 
 export IMG_NAME="${CUSTOM_NAME}-${CUSTOM_VERSION}-${TARGET_ARCH}"
 export WORK_DIR="/data/${CUSTOM_NAME}-${CUSTOM_VERSION}-${TARGET_ARCH}-work"
