@@ -257,14 +257,15 @@ if [ -z "${IS_TESTING}" ]; then
     IS_TESTING=
     case "${RELEASE}" in
         "jessie")
+            IS_TESTING=0 ;;
         "stretch")
+            IS_TESTING=0 ;;
         "buster")
-            IS_TESTING=0
-        ;;
+            IS_TESTING=0 ;;
         "bullseye")
+            IS_TESTING=1 ;;
         *)
-            IS_TESTING=1
-        ;;
+            IS_TESTING=1 ;;
     esac
 fi
 export IS_TESTING
