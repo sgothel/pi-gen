@@ -261,9 +261,9 @@ function resize_qcow2() {
 	# ROOT_MARGIN=$((800*1024*1024))
 	ROOT_MARGIN=$((1*1024*1024))
 	PARTED_OUT=`parted -s -m "$NBD_DEV" unit B print`
-	#PART_NO=`echo "$PARTED_OUT" | grep ext2 | awk -F: ' { print $1 } '`
-	#PART_START=`echo "$PARTED_OUT" | grep ext2 | awk -F: ' { print substr($2,1,length($2)-1) } '`
-	PART_START=`echo "$PARTED_OUT" | grep "2:" | awk -F: ' { print substr($2,1,length($2)-1) } '`
+	#PART_NO=`echo "$PARTED_OUT" | grep ext[24] | awk -F: ' { print $1 } '`
+	#PART_START=`echo "$PARTED_OUT" | grep ext[24] | awk -F: ' { print substr($2,1,length($2)-1) } '`
+	PART_START=`echo "$PARTED_OUT" | grep "^2:" | awk -F: ' { print substr($2,1,length($2)-1) } '`
 
 	e2fsck -y -f $MAP_ROOT_DEV || true
 
@@ -276,10 +276,9 @@ function resize_qcow2() {
 
 	let PART_NEW_SIZE=$DATA_SIZE*$BLOCK_SIZE
 	let PART_NEW_END=$PART_START+$PART_NEW_SIZE
-	#ACT1=`parted -s "$NBD_DEV" rm 2`
-	#ACT2=`parted -s "$NBD_DEV" unit B mkpart primary $PART_START $PART_NEW_END`
-	#NEW_IMG_SIZE=`parted -s -m "$NBD_DEV" unit B print free | tail -1 | awk -F: ' { print substr($2,1,length($2)-1) } '`
-	NEW_IMG_SIZE=$PART_NEW_END
+    ACT1=`parted -s "$NBD_DEV" rm 2`
+    ACT2=`parted -s "$NBD_DEV" unit B mkpart primary $PART_START $PART_NEW_END`
+    NEW_IMG_SIZE=`parted -s -m "$NBD_DEV" unit B print free | tail -1 | awk -F: ' { print substr($2,1,length($2)-1) } '`
     ROOT_PART_START=$PART_START
     ROOT_PART_SIZE_BYTES=$PART_NEW_SIZE
     ROOT_PART_BLOCK_SIZE=$BLOCK_SIZE
