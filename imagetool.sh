@@ -5,6 +5,8 @@ if [ "$(id -u)" != "0" ]; then
 		exit 1
 fi
 
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 progname=$(basename $0)
 
 function usage()
@@ -179,7 +181,7 @@ if [ ! -d "${MOUNTPOINT}" ]; then
     exit 1
 fi
 
-source scripts/qcow2_handling
+source ${BASE_DIR}/scripts/qcow2_handling
 
 if [ "${MOUNT}" = "1" ]; then
     if [ "${RAW_IMAGE}" = "1" ]; then
@@ -192,8 +194,7 @@ elif [ "${UMOUNT}" = "1" ]; then
     if [ -z "${NBD_DEV}" ] ; then
         NBD_DEV=$(find_nbd ${MOUNTPOINT})
         if [ -z "${NBD_DEV}" ] ; then
-            echo "umount: NBD_DEV not set and not found for ${MOUNTPOINT}. Exit."
-            exit 1;
+            echo "umount: NBD_DEV not set and not found for ${MOUNTPOINT}."
         fi
     fi
 	umount_image "${MOUNTPOINT}"
