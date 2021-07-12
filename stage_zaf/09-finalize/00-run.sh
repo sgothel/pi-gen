@@ -91,3 +91,7 @@ on_chroot << EOF
     fi
 EOF
 
+chown -R ${USER}:${USER} ../files.etc
+chown -R ${USER}:${USER} ../files.home
+chown -R ${USER}:${USER} ../files.elevator
+
