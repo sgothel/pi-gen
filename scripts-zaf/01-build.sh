@@ -3,9 +3,16 @@
 sdir=`dirname $(readlink -f $0)`
 rootdir=`dirname $sdir`
 
+export BASE_VERSION="1.6"
+
+export TARGET_PLATFORM="raspi3b_4"
+export TARGET_ARCH="arm64"
+
+export APT_PROXY=http://jordan:3142
+
 export CUSTOM_NAME="Zafena"
-# Zafena Version: major-version . minor.version - client . client-build
-export CUSTOM_VERSION="1.6-0.1"
+# Zafena Version: target_platform '-' target_arch '-' base_version, e.g. "raspi3b_4-arm64-1.5"
+export CUSTOM_VERSION="${TARGET_PLATFORM}-${TARGET_ARCH}-${BASE_VERSION}"
 
 export PI_GEN="pi-gen (${CUSTOM_NAME} branch)"
 export PI_GEN_REPO="http://kontorsserver.zafena.se/sgothel/pi-gen"
@@ -13,16 +20,12 @@ export PI_GEN_REPO="http://kontorsserver.zafena.se/sgothel/pi-gen"
 export RELEASE=bullseye
 # export RELEASE=buster
 
-export TARGET_ARCH="arm64"
-
-export APT_PROXY=http://jordan:3142
-
 # Produce a read-only rootfs
 export ROOTFS_RO=1
 export REDUCED_FOOTPRINT=1
 
-export IMG_NAME="${CUSTOM_NAME}-${CUSTOM_VERSION}-${TARGET_ARCH}"
-export WORK_DIR="/data/${CUSTOM_NAME}-${CUSTOM_VERSION}-${TARGET_ARCH}-work"
+export IMG_NAME="${CUSTOM_NAME}-${CUSTOM_VERSION}"
+export WORK_DIR="/data/${CUSTOM_NAME}-${CUSTOM_VERSION}-work"
 export IMG_FILENAME=${IMG_NAME}
 
 export DEPLOY_DIR=/data/diskimages
