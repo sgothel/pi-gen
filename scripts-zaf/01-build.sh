@@ -3,16 +3,19 @@
 sdir=`dirname $(readlink -f $0)`
 rootdir=`dirname $sdir`
 
-export BASE_VERSION="1.6"
-
 export TARGET_PLATFORM="raspi3b_4"
 export TARGET_ARCH="arm64"
+export PRODUCT_ID="p1"
+export PART_VERSION="1.6"
 
 export APT_PROXY=http://jordan:3142
 
 export CUSTOM_NAME="Zafena"
-# Zafena Version: target_platform '-' target_arch '-' base_version, e.g. "raspi3b_4-arm64-1.5"
-export CUSTOM_VERSION="${TARGET_PLATFORM}-${TARGET_ARCH}-${BASE_VERSION}"
+
+# Zafena Version: target_platform '-' target_arch '-' product_id '-' part_version, e.g. "raspi3b_4-arm64-p1-1.5"
+# Corresponding URL Request: '/' target_platform '/' target_arch '/' product_id '/', or "/raspi3b_4/arm64/p1/"
+# To be translated to
+export CUSTOM_VERSION="${TARGET_PLATFORM}-${TARGET_ARCH}-${PRODUCT_ID}-${PART_VERSION}"
 
 export PI_GEN="pi-gen (${CUSTOM_NAME} branch)"
 export PI_GEN_REPO="http://kontorsserver.zafena.se/sgothel/pi-gen"

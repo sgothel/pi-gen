@@ -36,7 +36,8 @@ mkdir -p                                                    "${ROOTFS_DIR}/boot/
 
 cat ../files.home/pi/.bashrc_startx                      >> "${ROOTFS_DIR}/home/pi/.bashrc"
 
-echo $ZAFENA_VERSION                                     >  "${ROOTFS_DIR}/etc/zafena_version"
+echo $CUSTOM_VERSION                                     >  "${ROOTFS_DIR}/etc/zafena_version"
+echo $CUSTOM_VERSION                                     >  "${ROOTFS_DIR}/boot/sys_arm64_000/zafena_version"
 
 on_chroot << EOF
     dpkg -P nfs-common rpcbind rsync autofs
