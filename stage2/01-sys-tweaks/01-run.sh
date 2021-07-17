@@ -153,8 +153,15 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
         install -m 644 files/grub/custom.cfg                 "${ROOTFS_DIR}/boot/grub/custom.cfg"
         sed -i 's/sys_arm64_000/sys_${TARGET_ARCH}_000/g'    "${ROOTFS_DIR}/boot/grub/custom.cfg"
         cp "${ROOTFS_DIR}/boot/grub/custom.cfg"              "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/"
-        sed -i 's/GRUB_DEFAULT=0/GRUB_DEFAULT=loop_rootfs/g' "${ROOTFS_DIR}/etc/default/grub"
-        #sed -i 's/GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=0/g'         "${ROOTFS_DIR}/etc/default/grub"
+        sed -i 's/GRUB_DEFAULT=.*$/GRUB_DEFAULT=loop_rootfs/g;s/GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=0/g;s/#GRUB_TERMINAL=.*$/GRUB_TERMINAL=console/g;s/#GRUB_DISABLE_LINUX_UUID=.*$/GRUB_DISABLE_LINUX_UUID=true/g' \
+                                                             "${ROOTFS_DIR}/etc/default/grub"
+        echo "GRUB_DISABLE_LINUX_PARTUUID=true"           >> "${ROOTFS_DIR}/etc/default/grub"
+        echo "GRUB_DISABLE_RECOVERY=true"                 >> "${ROOTFS_DIR}/etc/default/grub"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/05_debian_theme"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/10_linux"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_linux_xen"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/30_os-prober"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/30_uefi-firmware"
     fi
 
     install -m 755 files/initramfs/loop_rootfs-premount 	"${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/loop_rootfs"
