@@ -15,8 +15,8 @@ case "$1" in
     ROOT_PART=$(findmnt / -o source -n)
     ROOT_DEV_BASE=`lsblk -asr ${ROOT_PART} | tail -1 | awk ' { print $1 }'`
     ROOT_DEV="/dev/${ROOT_DEV_BASE}"
-    # Test ROOT_DEV deduction: (1) substring
-    if [ -n "${ROOT_PART} -a -n "${ROOT_DEV} -a -z "${ROOT_PART##*"${ROOT_DEV}"*}" ]; then
+    # Test ROOT_DEV deduction: (1) ROOT_DEV substring of ROOT_PART starting equal
+    if [ -n "${ROOT_PART} -a -n "${ROOT_DEV} -a -z "${ROOT_PART##"${ROOT_DEV}"*}" ]; then
         PARTED_OUT=`parted -s -m $ROOT_DEV unit B print`
 	    PART_NO=`echo "$PARTED_OUT" | grep ext4 | awk -F: ' { print $1 } '`
         # Test ROOT_DEV deduction: (2) identified partition number

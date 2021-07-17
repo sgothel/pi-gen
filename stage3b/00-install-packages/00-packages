@@ -5,7 +5,6 @@ git
 ffmpeg
 mpv
 # omxplayer
-raspberrypi-artwork
 gvfs
-chromium rpi-chromium-mods
+firefox-esr
 obconf

@@ -37,9 +37,10 @@ if ! mount | grep -q "$(realpath "${ROOTFS_DIR}"/sys)"; then
     sudo mount --bind /sys "${ROOTFS_DIR}/sys"
 fi
 
-if ! mount | grep -q "$(realpath "${ROOTFS_DIR}"/usr/local/projects)"; then
-    sudo mount --bind /usr/local/projects "${ROOTFS_DIR}/usr/local/projects"
-fi
+#if ! mount | grep -q "$(realpath "${ROOTFS_DIR}"/usr/local/projects)"; then
+#    mkdir -p "${ROOTFS_DIR}/usr/local/projects"
+#    sudo mount --bind /usr/local/projects "${ROOTFS_DIR}/usr/local/projects"
+#fi
 
 sudo /sbin/capsh --user=$username --drop=cap_setfcap "--chroot=${ROOTFS_DIR}/" -- -c "$*"
 

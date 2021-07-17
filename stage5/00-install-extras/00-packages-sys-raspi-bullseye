@@ -1,16 +1,14 @@
-mu-editor
 #sonic-pi
 #scratch nuscratch scratch3
 smartsim
 
 #minecraft-pi python-minecraftpi python-picraft python3-picraft
-python-sense-emu sense-emu-tools python-sense-emu-doc
+python3-sense-emu sense-emu-tools python3-sense-emu-doc
 
 #wolfram-engine
-claws-mail
 greenfoot-unbundled bluej
 #nodered
 realvnc-vnc-viewer
 
-python-games
+python3-games
 code-the-classics

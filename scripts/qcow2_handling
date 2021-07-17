@@ -356,7 +356,7 @@ function make_bootable_image() {
 	echo "Get PARTUUIDs from image"
 	IMGID="$(blkid -o value -s PTUUID "${EXPORT_IMAGE}")"
 
-	echo "Mount image"
+	echo "Mount image ${EXPORT_IMAGE}"
 	MOUNTROOT=${WORK_DIR}/tmpimage
 	mkdir -p $MOUNTROOT
     mount_rawimage "${EXPORT_IMAGE}" $MOUNTROOT
@@ -377,7 +377,9 @@ function make_bootable_image() {
             echo "Set UUIDs to make it bootable"
             sed -i "s/BOOTDEV/PARTUUID=${BOOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
             sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
-            sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/boot/sys_arm64_000/cmdline.txt"
+            if [ "${TARGET_RASPI}" = "1" ]; then
+                sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
+            fi
         fi
     else
         echo "Setup hard devicenames"
@@ -389,10 +391,12 @@ function make_bootable_image() {
         echo "Set hard device names to make it bootable"
         sed -i "s/BOOTDEV/${BOOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
         sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
-        sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/boot/sys_arm64_000/cmdline.txt"
+        if [ "${TARGET_RASPI}" = "1" ]; then
+            sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
+        fi
     fi
 
-	echo "Umount image"
+	echo "Umount image ${EXPORT_IMAGE}"
 	sync
     umount_image $MOUNTROOT
 

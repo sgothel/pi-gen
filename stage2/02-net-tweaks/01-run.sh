@@ -1,7 +1,12 @@
 #!/bin/bash -e
 
-install -v -d					"${ROOTFS_DIR}/etc/systemd/system/dhcpcd.service.d"
-install -v -m 644 files/wait.conf		"${ROOTFS_DIR}/etc/systemd/system/dhcpcd.service.d/"
+if [ "${TARGET_RASPI}" = "1" ]; then
+    install -v -d					   "${ROOTFS_DIR}/etc/systemd/system/dhcpcd.service.d"
+    install -v -m 644 files/wait.conf  "${ROOTFS_DIR}/etc/systemd/system/dhcpcd.service.d/"
+fi
+
+install -m 644 files/network/ethN   "${ROOTFS_DIR}/etc/network/interfaces.d/"
+install -m 644 files/network/enN    "${ROOTFS_DIR}/etc/network/interfaces.d/"
 
 install -v -d					"${ROOTFS_DIR}/etc/wpa_supplicant"
 install -v -m 600 files/wpa_supplicant.conf	"${ROOTFS_DIR}/etc/wpa_supplicant/"

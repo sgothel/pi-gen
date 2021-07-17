@@ -14,9 +14,9 @@ IMG_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
 INFO_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.info"
 
 IMG_FILE_ROOT_EXT4="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root-ext4.img"
-IMG_FILE_ROOT_SQFS_GZ="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root-sqfs_gz.img"
+#IMG_FILE_ROOT_SQFS_GZ="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root-sqfs_gz.img"
 IMG_FILE_ROOT_SQFS_LZO="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root-sqfs_lzo.img"
-IMG_FILE_ROOT_SQFS_ZSTD="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root-sqfs_zstd10.img"
+#IMG_FILE_ROOT_SQFS_ZSTD="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root-sqfs_zstd10.img"
 INFO_FILE_ROOT="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.root.info"
 
 on_chroot << EOF
@@ -107,11 +107,28 @@ make_bootable_image "${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.qcow2" \
 
 if [ "${ROOTFS_RO}" = "1" ] ; then
     mount -o ro "$IMG_FILE_ROOT_EXT4" "${ROOTFS_DIR}"
-    mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_GZ}" -comp gzip
+    #mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_GZ}" -comp gzip
     mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_LZO}" -comp lzo
-    mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_ZSTD}" -comp zstd -Xcompression-level 10
+    #mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_ZSTD}" -comp zstd -Xcompression-level 10
     umount "${ROOTFS_DIR}"
-    cp -a "$INFO_FILE_ROOT" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_arm64_000/rootfs.inf"
+    cp -a "$INFO_FILE_ROOT" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_${TARGET_ARCH}_000/rootfs.inf"
+
+    # cp -a "$IMG_FILE_ROOT_EXT4" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_${TARGET_ARCH}_000/rootfs.img"
+    cp -a "$IMG_FILE_ROOT_SQFS_LZO" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_${TARGET_ARCH}_000/rootfs.img"
+    # cp -a "$IMG_FILE_ROOT_SQFS_ZSTD" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_${TARGET_ARCH}_000/rootfs.img"
+
+	echo "Mount image ${IMG_FILE}"
+	MOUNTROOT=${STAGE_WORK_DIR}/tmpimage
+	mkdir -p $MOUNTROOT
+    mount_rawimage "${IMG_FILE}" $MOUNTROOT
+	if [ ! -d "${MOUNTROOT}/root" ]; then
+		echo "Image damaged or not mounted. Exit."
+		exit 1
+	fi
+    cp "$IMG_FILE_ROOT_SQFS_LZO" "${MOUNTROOT}/boot/sys_${TARGET_ARCH}_000/rootfs.img"
+	echo "Umount image ${IMG_FILE}"
+	sync
+    umount_image $MOUNTROOT
 fi
 mv "$INFO_FILE" "$INFO_FILE_ROOT" "$DEPLOY_DIR2/"
 
@@ -127,16 +144,12 @@ fi
 mv "$IMG_FILE" "$DEPLOY_DIR2/"
 
 if [ "${ROOTFS_RO}" = "1" ] ; then
-    # cp -a "$IMG_FILE_ROOT_EXT4" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_arm64_000/rootfs.img"
-    cp -a "$IMG_FILE_ROOT_SQFS_LZO" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_arm64_000/rootfs.img"
-    # cp -a "$IMG_FILE_ROOT_SQFS_ZSTD" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_arm64_000/rootfs.img"
-
     ( cd "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}"; zip -r0 "../${IMG_FILENAME}${IMG_SUFFIX}.sdcard.zip" . )
 
     mv "$IMG_FILE_ROOT_EXT4" "$DEPLOY_DIR2/"
-    mv "$IMG_FILE_ROOT_SQFS_GZ" "$DEPLOY_DIR2/"
+    #mv "$IMG_FILE_ROOT_SQFS_GZ" "$DEPLOY_DIR2/"
     mv "$IMG_FILE_ROOT_SQFS_LZO" "$DEPLOY_DIR2/"
-    mv "$IMG_FILE_ROOT_SQFS_ZSTD" "$DEPLOY_DIR2/"
+    #mv "$IMG_FILE_ROOT_SQFS_ZSTD" "$DEPLOY_DIR2/"
 fi
 
 rm -f "${STAGE_WORK_DIR}/SHA256SUMS"

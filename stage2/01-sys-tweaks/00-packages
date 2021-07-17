@@ -3,32 +3,26 @@ ssh less fbset sudo psmisc strace
 console-setup keyboard-configuration debconf-utils parted unzip
 #build-essential manpages-dev python3 bash-completion gdb pkg-config
 libstdc++6
-#python3 python3-rpi.gpio python3-gpiozero
-python-minimal python-rpi.gpio python-gpiozero
+#python3 python3-gpiozero
+python-minimal python-gpiozero
 bash-completion pkg-config
 v4l-utils
 avahi-daemon
 lua5.1
 luajit
 hardlink ca-certificates curl
-fake-hwclock
 nfs-common
 autofs
 usbutils
-#libraspberrypi-dev libraspberrypi-doc libfreetype6-dev
-libraspberrypi-dev libfreetype6-dev
+libfreetype6-dev
 dosfstools
 squashfs-tools
 fatattr
 #dphys-swapfile
 bluez
-raspberrypi-sys-mods
-pi-bluetooth
 rfkill
 apt-listchanges
 usb-modeswitch
-libpam-chksshpwd
-rpi-update
 libmtp-runtime
 rsync
 htop iotop powertop iftop
@@ -40,8 +34,6 @@ ethtool
 vl805fw
 #ntfs-3g
 pciutils
-rpi-eeprom
-raspinfo
 busybox
 initramfs-tools-core
 initramfs-tools

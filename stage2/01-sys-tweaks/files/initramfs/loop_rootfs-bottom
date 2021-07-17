@@ -1,0 +1,24 @@
+#!/bin/sh -e
+
+PREREQ="udev"
+
+prereqs()
+{
+	echo "${PREREQ}"
+}
+
+case ${1} in
+	prereqs)
+		prereqs
+		exit 0
+		;;
+esac
+
+. /scripts/functions
+
+readonly BOOT_DIR="/mnt/boot"
+
+# move BOOT_DIR to the rootfs; fall back to util-linux mount that does
+# not understand -o move
+mount -n -o move ${BOOT_DIR} "${rootmnt:?}/boot" || mount -n --move ${BOOT_DIR} "${rootmnt}/boot"
+

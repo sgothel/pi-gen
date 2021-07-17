@@ -14,7 +14,7 @@ prereqs)
 	;;
 esac
 
-if [ ! -x /usr/bin/unsquashfs ]; then
+if [ ! -x /usr/bin/unsquashfs -o ! -x /bin/lsblk -o ! -x /sbin/blkid -o ! -x /bin/date ]; then
 	exit 1
 fi
 
@@ -22,4 +22,6 @@ fi
 . /usr/share/initramfs-tools/hook-functions
 
 copy_exec /usr/bin/unsquashfs
-
+copy_exec /bin/lsblk
+copy_exec /sbin/blkid
+copy_exec /bin/date

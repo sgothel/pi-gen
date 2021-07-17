@@ -2,12 +2,9 @@ alsa-utils
 librsvg2-common
 fonts-quicksand
 policykit-1
-gldriver-test
 fonts-droid-fallback
 fonts-liberation2
 arandr
-raspberrypi-net-mods
 tree
 libgl1-mesa-dri libgles1 libgles2-mesa
 mesa-utils
-rp-prefapps
