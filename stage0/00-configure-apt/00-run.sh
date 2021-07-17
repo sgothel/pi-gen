@@ -19,6 +19,10 @@ else
 	rm -f "${ROOTFS_DIR}/etc/apt/apt.conf.d/51cache"
 fi
 
+if [ "${TARGET_RASPI}" = "1" ]; then
+    on_chroot apt-key add - < files/raspberrypi.gpg.key
+fi
+
 # Disable apt caching in general
 install -m 644 files/02nocache "${ROOTFS_DIR}/etc/apt/apt.conf.d/02nocache"
 
@@ -31,13 +35,11 @@ if [ "${REDUCED_FOOTPRINT}" = "1" ]; then
     install -m 644 files/01_nodoc            "${ROOTFS_DIR}/etc/dpkg/dpkg.cfg.d/01_nodoc"
 fi
 
-if [ "${TARGET_RASPI}" = "1" ]; then
-    on_chroot apt-key add - < files/raspberrypi.gpg.key
-fi
-if [ "${TARGET_ARCH}" = "arm64" ]; then
-    on_chroot dpkg --add-architecture armhf
-fi
 on_chroot << EOF
+if [ "${TARGET_ARCH}" = "arm64" ]; then
+    dpkg --add-architecture armhf
+fi
 apt-get update
 apt-get dist-upgrade -y
 EOF
+
