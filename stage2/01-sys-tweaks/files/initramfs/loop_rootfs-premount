@@ -63,13 +63,46 @@ BOOT_COUNTER=""
 IMAGE_FILE=""
 FILE_FSTYPE=""
 
-find_blkpart() {
+_mylog() {
+    # shellcheck disable=SC2059
+    printf "$@" >&2
+    return 0 # Prevents error carry over in case of unavailable console
+}
+
+mylog() {
+    _mylog "%s\\n" "$*"
+}
+
+mylog_success_msg() {
+	_mylog "Success: %s\\n" "$*"
+}
+
+mylog_failure_msg() {
+	_mylog "Failure: %s\\n" "$*"
+}
+
+mylog_warning_msg() {
+	_mylog "Warning: %s\\n" "$*"
+}
+
+mylog_begin_msg() {
+	_mylog "Begin: %s ... " "$*"
+}
+
+mylog_end_msg() {
+	_mylog "done.\\n"
+}
+
+find_partition_base() {
     local fstype_exp="$1"
-    local res=""
+    local mnt_dir="$2"
+    local file_exp="$3"
     local blkparts=$(lsblk -l | grep part | cut -d" " -f1)
+    local part_dev=""
     if [ -z "${blkparts}" ]; then
         # May take some time on PC's after loading device modules (usb, ..)
         local blkpartwait=180
+        mylog_warning_msg "Waiting up to ${blkpartwait} seconds for block devices to become online ..."
         while [ "$(time_elapsed)" -lt "$blkpartwait" ]; do
             blkparts=$(lsblk -l | grep part | cut -d" " -f1)
             if [ -n "${blkparts}" ]; then
@@ -83,44 +116,79 @@ find_blkpart() {
             exit 1
         fi
     fi
+    mylog_success_msg "Searching in ${blkparts} partitions ..."
     for i in ${blkparts} ; do
-        local FSTYPE=$(blkid -o value -s TYPE /dev/$i)
-        if [ "${FSTYPE}" = "${fstype_exp}" ]; then
-            res="/dev/$i"
-            break
+        local fs_type=$(blkid -o value -s TYPE /dev/$i)
+        if [ "${fs_type}" = "${fstype_exp}" ]; then
+            part_dev="/dev/$i"
+            # force fix verbose fseek, using undocumented options '-f', '-y'
+            if ! fsck -f -y -V -t ${fs_type} "${part_dev}" >&2 ; then
+                mylog_warning_msg "The ${fs_type} filesystem on ${part_dev} seems to require a manual fsck, continuing"
+            fi
+            if ! mount -t ${fs_type} ${part_dev} ${mnt_dir} >&2  ; then
+                mylog_warning_msg "Could not mount ${fs_type} from ${part_dev} on ${mnt_dir}, continuing."
+                part_dev=""
+                continue
+            fi
+            mylog_success_msg "Mounted ${fs_type} from ${part_dev} on ${mnt_dir} ..."
+            if [ -f "${mnt_dir}/${file_exp}" ] ; then
+                mylog_success_msg "Found "${mnt_dir}/${file_exp}" on mounted ${fs_type} from ${part_dev}, done!"
+                break
+            else
+                mylog_warning_msg "Could not find "${mnt_dir}/${file_exp}" on mounted ${fs_type} from ${part_dev}, continuing"
+                part_dev=""
+                umount ${mnt_dir} >&2 
+            fi
         fi
     done
-    echo -n "${res}"
+    echo -n "${part_dev}"
+}
+
+find_partition() {
+    local part_dev=$(find_partition_base "$1" "$2" "$3")
+    if [ -z "${part_dev}" ]; then
+        # May take some time on PC's after loading device modules (usb, ..)
+        local blkpartwait=180
+        mylog_warning_msg "Retrying up to ${blkpartwait} seconds finding ${BOOT_FSTYPE} partition for ${BOOT_DIR} ..."
+        while [ "$(time_elapsed)" -lt "$blkpartwait" ]; do
+            part_dev=$(find_partition_base "$1" "$2" "$3")
+            if [ -n "${part_dev}" ]; then
+                break
+            fi
+            sleep 1
+        done
+    fi
+    echo -n "${part_dev}"
 }
 
 check_fsfile() {
     local fsfile=$1
 
     if [ ! -f "${fsfile}" ]; then
-        log_failure_msg "Image file ${fsfile} doesn't exist."
+        mylog_failure_msg "Image file ${fsfile} doesn't exist."
         return 1
     fi
-    log_success_msg "Image file ${fsfile} exists."
+    mylog_success_msg "Image file ${fsfile} exists."
 
     FILE_FSTYPE=$(get_fstype "${fsfile}")
     if [ -z "${FILE_FSTYPE}" -o "${FILE_FSTYPE}" = "unknown" ]; then
-        log_failure_msg "Image file ${fsfile} unknown fstype."
+        mylog_failure_msg "Image file ${fsfile} unknown fstype."
         return 1
     fi
-    log_success_msg "Image file ${fsfile} of type ${FILE_FSTYPE}."
+    mylog_success_msg "Image file ${fsfile} of type ${FILE_FSTYPE}."
 
     if ! fsck -n -V -t "${FILE_FSTYPE}" "${fsfile}"; then
-        log_failure_msg "Image file ${fsfile} fsck failed."
+        mylog_failure_msg "Image file ${fsfile} fsck failed."
         return 1
     fi
-    log_success_msg "Image file ${fsfile} fsck OK."
+    mylog_success_msg "Image file ${fsfile} fsck OK."
 
     if [ "${FILE_FSTYPE}" = "squashfs" ]; then
         if ! unsquashfs -l "${fsfile}" > /dev/null ; then
-            log_failure_msg "Image file ${fsfile} unsquashfs -l failed."
+            mylog_failure_msg "Image file ${fsfile} unsquashfs -l failed."
             return 1
         fi
-        log_success_msg "Image file ${fsfile} unsquashfs -l OK."
+        mylog_success_msg "Image file ${fsfile} unsquashfs -l OK."
     fi
 
     return 0;
@@ -136,14 +204,14 @@ attach_rootfs() {
     # Using losetup from initrd
     local rootdev="/dev/loop0"
     if ! losetup ${rootdev} ${fsfile}; then
-        log_failure_msg "Could not attach ${fsfile} to loop-device ${rootdev}."
+        mylog_failure_msg "Could not attach ${fsfile} to loop-device ${rootdev}."
         return 1
     fi
 
     # Latest losetup
     #local rootdev=$(losetup --find --show ${fsfile})
     #if [ -z "${rootdev}" ]; then
-    #    log_failure_msg "Could not attach ${fsfile} to loop-device."
+    #    mylog_failure_msg "Could not attach ${fsfile} to loop-device."
     #    return 1
     #fi
 
@@ -176,7 +244,7 @@ fallback_rootfs() {
     rm -f "${BOOT_COUNTER_FILE}"
     if [ "${os_prefix_fallback}" = "${OS_PREFIX_DEFAULT}" ]; then
         # Factory reset fast path
-        log_success_msg "Fallback to factory default: ${OS_PREFIX} -> ${os_prefix_fallback}."
+        mylog_success_msg "Fallback to factory default: ${OS_PREFIX} -> ${os_prefix_fallback}."
         if [ "${USES_RASPI_CONFIG}" = "1" ]; then
             mv "${RPI_CONFIG_FILE}" "${RPI_CONFIG_FILE_OLD}"
             cp "${RPI_CONFIG_FILE_DEFAULT}" "${RPI_CONFIG_FILE}"
@@ -189,7 +257,7 @@ fallback_rootfs() {
 
         #sed "s/os_prefix=${os_prefix_current}/os_prefix=${os_prefix_fallback}/g" "${RPI_CONFIG_FILE}" > "${RPI_CONFIG_FILE}.new"
         #if ! compare_files "${RPI_CONFIG_FILE}" "${RPI_CONFIG_FILE}.new" "${os_prefix_current}" "${os_prefix_fallback}"; then
-        #    log_failure_msg "Failed fallback setting in new ${RPI_CONFIG_FILE}, fallback to factory reset ${RPI_CONFIG_FILE_DEFAULT}."
+        #    mylog_failure_msg "Failed fallback setting in new ${RPI_CONFIG_FILE}, fallback to factory reset ${RPI_CONFIG_FILE_DEFAULT}."
         #    mv "${RPI_CONFIG_FILE}" "${RPI_CONFIG_FILE_OLD}"
         #    cp "${RPI_CONFIG_FILE_DEFAULT}" "${RPI_CONFIG_FILE}"
         #else
@@ -197,7 +265,7 @@ fallback_rootfs() {
         #    mv "${RPI_CONFIG_FILE}.new" "${RPI_CONFIG_FILE}"
         #fi
 
-        log_success_msg "Fallback to previous: ${OS_PREFIX} -> ${os_prefix_fallback}."
+        mylog_success_msg "Fallback to previous: ${OS_PREFIX} -> ${os_prefix_fallback}."
         if [ "${USES_RASPI_CONFIG}" = "1" ]; then
             mv "${RPI_CONFIG_FILE}" "${RPI_CONFIG_FILE_OLD}"
             cp "${BOOT_DIR}/${os_prefix_fallback}/config.txt" "${RPI_CONFIG_FILE}"
@@ -239,52 +307,28 @@ add_date() {
     done ) >> $1
 }
 
-log_begin_msg "loop_rootfs"
+mylog_begin_msg "loop_rootfs"
 
-BOOT_PART=$(find_blkpart ${BOOT_FSTYPE})
+mkdir -p ${BOOT_DIR}
+BOOT_PART=$(find_partition ${BOOT_FSTYPE} ${BOOT_DIR} "loop_rootfs.id")
 
 if [ "${ROOT}" != "file" ]; then
-    log_success_msg "Skip loop for non file ROOT ${ROOT}"
-    if [ -n "${BOOT_PART}" ]; then
-        log_success_msg "(0) Trying first ${BOOT_FSTYPE} block device partition ${BOOT_PART}."
-        # force fix verbose fseek, using undocumented options '-f', '-y'
-        if ! fsck -f -y -V -t ${BOOT_FSTYPE} "${BOOT_PART}"; then
-            log_failure_msg "(0) The ${BOOT_FSTYPE} filesystem on ${BOOT_PART} seems to require a manual fsck, continuing"
-        fi
-
-        mkdir -p ${BOOT_DIR}
-
-        if ! mount -t ${BOOT_FSTYPE} ${BOOT_PART} ${BOOT_DIR} ; then
-            sync
-            log_failure_msg "(0) Could not mount ${BOOT_PART} on ${BOOT_DIR}."
-            exit 1
-        fi
-        log_success_msg "(0) Mounted ${BOOT_PART} on ${BOOT_DIR}."
+    mylog_success_msg "Skip loop for non file ROOT ${ROOT}"
+    if [ -z "${BOOT_PART}" ]; then
+        mylog_failure_msg "(0) Could not find ${BOOT_FSTYPE} partition for ${BOOT_DIR}."
+    else
+        mylog_success_msg "(0) Mounted ${BOOT_FSTYPE} ${BOOT_PART} partition on ${BOOT_DIR}."
     fi
-    log_end_msg
+    mylog_end_msg
     exit 0
 fi
 
 if [ -z "${BOOT_PART}" ]; then
     sync
-    panic "Could not find first ${BOOT_FSTYPE} block device partition."
+    panic "Could not find ${BOOT_FSTYPE} partition for ${BOOT_DIR}."
     exit 1
 fi
-log_success_msg "Using first ${BOOT_FSTYPE} block device partition ${BOOT_PART}."
-
-# force fix verbose fseek, using undocumented options '-f', '-y'
-if ! fsck -f -y -V -t ${BOOT_FSTYPE} "${BOOT_PART}"; then
-    log_failure_msg "The ${BOOT_FSTYPE} filesystem on ${BOOT_PART} seems to require a manual fsck, continuing"
-fi
-
-mkdir -p ${BOOT_DIR}
-
-if ! mount -t ${BOOT_FSTYPE} ${BOOT_PART} ${BOOT_DIR} ; then
-    sync
-    panic "Could not mount ${BOOT_PART} on ${BOOT_DIR}."
-    exit 1
-fi
-log_success_msg "Mounted ${BOOT_PART} on ${BOOT_DIR}."
+mylog_success_msg "Mounted ${BOOT_FSTYPE} ${BOOT_PART} partition on ${BOOT_DIR}."
 
 # Make the 'debug' output file persistent (flush old)
 if [ -f ${BOOT_DIR}/init_debug.log ]; then
@@ -359,11 +403,11 @@ if [ -f "${OS_PREFIX_FILE_LAST}" ]; then
             if ! check_fsfile "${IMAGE_FILE}"; then
                 # IMAGE_FILE not existing for OS_PREFIX_FILE_LAST, corrupt or its fstype unknown
                 # Next: factory default OS_PREFIX_DEFAULT
-                log_failure_msg "Fallback ${OS_PREFIX_LAST} image file ${IMAGE_FILE} non existent or corrupt. Next factory default ${OS_PREFIX_DEFAULT}. Reboot..."
+                mylog_failure_msg "Fallback ${OS_PREFIX_LAST} image file ${IMAGE_FILE} non existent or corrupt. Next factory default ${OS_PREFIX_DEFAULT}. Reboot..."
                 fallback_rootfs "${OS_PREFIX}" "${OS_PREFIX_DEFAULT}"
             else
                 # Next: factory default OS_PREFIX_LAST
-                log_success_msg "Fallback ${OS_PREFIX} -> previous ${OS_PREFIX_LAST}, counter ${BOOT_COUNTER}. Reboot..."
+                mylog_success_msg "Fallback ${OS_PREFIX} -> previous ${OS_PREFIX_LAST}, counter ${BOOT_COUNTER}. Reboot..."
                 fallback_rootfs "${OS_PREFIX}" "${OS_PREFIX_LAST}"
             fi
             exit 1
@@ -371,13 +415,13 @@ if [ -f "${OS_PREFIX_FILE_LAST}" ]; then
             # Testing new OS_PREFIX 1st boot: BOOT_COUNTER -> 1
             let BOOT_COUNTER=${BOOT_COUNTER} + 1
             echo ${BOOT_COUNTER} > "${BOOT_COUNTER_FILE}"
-            log_success_msg "Testing new ${OS_PREFIX} (counter -> ${BOOT_COUNTER} (1))."
+            mylog_success_msg "Testing new ${OS_PREFIX} (counter -> ${BOOT_COUNTER} (1))."
         fi
     else
         # Create BOOT_COUNTER, 1st boot: BOOT_COUNTER -> 1
         BOOT_COUNTER=1
         echo ${BOOT_COUNTER} > "${BOOT_COUNTER_FILE}"
-        log_success_msg "Testing new ${OS_PREFIX} (counter -> ${BOOT_COUNTER} (2))."
+        mylog_success_msg "Testing new ${OS_PREFIX} (counter -> ${BOOT_COUNTER} (2))."
     fi
 elif [ -f "${BOOT_COUNTER_FILE}" ]; then
     # cleanup BOOT_COUNTER_FILE, no OS_PREFIX_FILE_LAST
@@ -387,12 +431,12 @@ fi
 IMAGE_FILE="${BOOT_DIR}/${OS_PREFIX}/rootfs.img"
 
 if ! attach_rootfs "${IMAGE_FILE}"; then
-    log_failure_msg "Could not attach to ${OS_PREFIX}, file ${IMAGE_FILE}."
+    mylog_failure_msg "Could not attach to ${OS_PREFIX}, file ${IMAGE_FILE}."
     if [ -n "${OS_PREFIX_LAST}" -a "${OS_PREFIX}" != "${OS_PREFIX_LAST}" ]; then
-        log_success_msg "Fallback ${OS_PREFIX} -> previous ${OS_PREFIX_LAST}. Reboot..."
+        mylog_success_msg "Fallback ${OS_PREFIX} -> previous ${OS_PREFIX_LAST}. Reboot..."
         fallback_rootfs "${OS_PREFIX}" "${OS_PREFIX_LAST}"
     elif [ "${OS_PREFIX}" != "${OS_PREFIX_DEFAULT}" ]; then
-        log_success_msg "Fallback ${OS_PREFIX} -> factory default ${OS_PREFIX_DEFAULT}. Reboot..."
+        mylog_success_msg "Fallback ${OS_PREFIX} -> factory default ${OS_PREFIX_DEFAULT}. Reboot..."
         fallback_rootfs "${OS_PREFIX}" "${OS_PREFIX_DEFAULT}"
     else
         sync
@@ -401,9 +445,9 @@ if ! attach_rootfs "${IMAGE_FILE}"; then
     exit 1
 fi
 
-log_success_msg "Attached ${OS_PREFIX}, ${ROOTFSTYPE} file ${IMAGE_FILE} to loop-device ${ROOT}."
+mylog_success_msg "Attached ${OS_PREFIX}, ${ROOTFSTYPE} file ${IMAGE_FILE} to loop-device ${ROOT}."
 
-log_end_msg
+mylog_end_msg
 
 quiet="${quiet_orig}"
 

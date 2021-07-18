@@ -111,6 +111,9 @@ on_chroot << EOF
         fi
     done
 
+    # Allow this partition to be found by loop_rootfs
+    touch /boot/loop_rootfs.id
+
     if [ "${ROOTFS_RO}" = "1" ] ; then
         systemctl disable resize2fs_once
         systemctl mask resize2fs_once
