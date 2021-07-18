@@ -217,7 +217,7 @@ if [ "$(id -u)" != "0" ]; then
 	exit 1
 fi
 
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR=`dirname $(readlink -f "${BASH_SOURCE[0]}")`
 export BASE_DIR
 
 while getopts "c:" flag

@@ -2,7 +2,7 @@
 
 #set -x
 
-sdir=`dirname $(readlink -f $0)`
+sdir=`dirname $(readlink -f "${BASH_SOURCE[0]}")`
 rootdir=`dirname $sdir`
 
 packfile=$1
