@@ -11,6 +11,8 @@ install -m 644 files/network/enN    "${ROOTFS_DIR}/etc/network/interfaces.d/"
 install -v -d					"${ROOTFS_DIR}/etc/wpa_supplicant"
 install -v -m 600 files/wpa_supplicant.conf	"${ROOTFS_DIR}/etc/wpa_supplicant/"
 
+echo "env force_hostname=YES" >> "${ROOTFS_DIR}/etc/dhcpcd.conf"
+
 if [ -v WPA_COUNTRY ]; then
 	echo "country=${WPA_COUNTRY}" >> "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant.conf"
 fi
