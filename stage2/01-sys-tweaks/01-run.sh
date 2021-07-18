@@ -42,6 +42,11 @@ on_chroot << EOF
         systemctl disable hwclock.sh
     fi
 
+    # /boot and ROOT are mounted via our 'loop_rootfs' script
+    # without having a live mapping in /etc/fstab.
+    systemctl disable systemd-remount-fs
+    systemctl mask systemd-remount-fs
+
     systemctl disable rsync
     systemctl mask rsync
     systemctl disable nfs-common
