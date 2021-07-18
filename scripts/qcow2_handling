@@ -1,5 +1,8 @@
 #!/bin/bash
 
+sdir=`dirname $(readlink -f "${BASH_SOURCE[0]}")`
+rootdir=`dirname $sdir`
+
 # QCOW2 Routines
 
 export CURRENT_IMAGE
@@ -12,23 +15,27 @@ export MAP_ROOT_DEV
 
 # set in build.sh
 # should be fairly enough for the beginning
-# overwrite here by uncommenting following lines
+#} overwrite here by uncommenting following lines
 # BASE_QCOW2_SIZE=15200M
+
+source ${sdir}/lib_nbd_img_handling
+
+###
+### Stateful functions ...
+###
 
 # find and initialize free block device nodes
 init_nbd() {
-	modprobe nbd max_part=16
 	if [ -z "${NBD_DEV}" ]; then
-	for x in /sys/class/block/nbd* ; do
-		S=`cat $x/size`
-		if [ "$S" == "0" ] ; then
-			NBD_DEV=/dev/$(basename $x)
-			MAP_BOOT_DEV=/dev/mapper/$(basename $x)p1
-			MAP_ROOT_DEV=/dev/mapper/$(basename $x)p2
-			break
-		fi
-	done
-	fi
+        local nbd_dev=$(lib_init_nbd)
+        if [ -z "${nbd_dev}" ] ; then
+            echo "init_nbd: NBD device not determined. Exit."
+            exit 1;
+        fi
+        NBD_DEV=${nbd_dev}
+        MAP_BOOT_DEV=/dev/mapper/${nbd_dev}p1
+        MAP_ROOT_DEV=/dev/mapper/${nbd_dev}p2
+    fi
 }
 export -f init_nbd
 
@@ -39,10 +46,9 @@ connect_blkdev() {
         echo "connect_blkdev: NBD_DEV not determined. Exit."
         exit 1;
     fi
-	qemu-nbd --discard=unmap -c $NBD_DEV "$1"
-	sync
-	kpartx -a $NBD_DEV
-	sync
+    if ! lib_connect_blkdev3 "${1}" "qcow2" "${NBD_DEV}" ; then
+        exit 1;
+    fi
 	CURRENT_IMAGE="$1"
 }
 export -f connect_blkdev
@@ -54,10 +60,9 @@ connect_raw_blkdev() {
         echo "connect_raw_blkdev: NBD_DEV not determined. Exit."
         exit 1;
     fi
-	qemu-nbd --discard=unmap -f raw -c $NBD_DEV "$1"
-	sync
-	kpartx -a $NBD_DEV
-	sync
+    if ! lib_connect_blkdev3 "${1}" "raw" "${NBD_DEV}" ; then
+        exit 1;
+    fi
 	CURRENT_IMAGE="$1"
 }
 export -f connect_raw_blkdev
@@ -68,8 +73,7 @@ disconnect_blkdev() {
         echo "disconnect_blkdev: NBD_DEV not set. Exit."
         exit 1;
     fi
-	kpartx -d $NBD_DEV
-	qemu-nbd -d $NBD_DEV
+    lib_disconnect_blkdev "${NBD_DEV}"
 	NBD_DEV=
 	MAP_BOOT_DEV=
 	MAP_ROOT_DEV=
@@ -175,25 +179,25 @@ load_qimage() {
 				#  -o preallocation=falloc
 				qemu-img create -f qcow2 image-${STAGE}.qcow2 $BASE_QCOW2_SIZE
 				sync
-				qemu-nbd --discard=unmap -c $NBD_DEV image-${STAGE}.qcow2
+				qemu-nbd --discard=unmap -c /dev/${NBD_DEV} image-${STAGE}.qcow2
 				sync
 
                 if [ "${ROOTFS_RO}" = "1" ] ; then
                     # 1 boot (7100 MiB), rootfs (remainder of BASE_QCOW2_SIZE)
-                    sfdisk $NBD_DEV << EOF
+                    sfdisk /dev/${NBD_DEV} << EOF
 4MiB,7100MiB,c,*
 7104MiB,,83;
 EOF
                 else
                     # 1 boot (250 MiB), rootfs (remainder of BASE_QCOW2_SIZE)
-                    sfdisk $NBD_DEV << EOF
+                    sfdisk /dev/${NBD_DEV} << EOF
 4MiB,250MiB,c,*
 254MiB,,83;
 EOF
                 fi
 				sync
 
-				kpartx -a $NBD_DEV
+				kpartx -a /dev/${NBD_DEV}
 				mkfs.fat -n BOOT -F 32 -v $MAP_BOOT_DEV
                 if [ "${ROOTFS_RO}" = "1" ] ; then
                     # Set reserved-blocks-percentage for root to zero, no journaling
@@ -211,9 +215,9 @@ EOF
 					-o backing_file=${WORK_DIR}/image-${PREV_STAGE}.qcow2 \
 					${WORK_DIR}/image-${STAGE}.qcow2
 				sync
-				qemu-nbd --discard=unmap -c $NBD_DEV image-${STAGE}.qcow2
+				qemu-nbd --discard=unmap -c /dev/${NBD_DEV} image-${STAGE}.qcow2
 				sync
-				kpartx -a $NBD_DEV
+				kpartx -a /dev/${NBD_DEV}
 			fi
 
 			mount -v -t ext4 $MAP_ROOT_DEV "${ROOTFS_DIR}"
@@ -260,7 +264,7 @@ function resize_qcow2() {
     # rootfs ext4 ^journal => ext2, second partition
 	# ROOT_MARGIN=$((800*1024*1024))
 	ROOT_MARGIN=$((1*1024*1024))
-	PARTED_OUT=`parted -s -m "$NBD_DEV" unit B print`
+	PARTED_OUT=`parted -s -m "/dev/${NBD_DEV}" unit B print`
 	#PART_NO=`echo "$PARTED_OUT" | grep ext[24] | awk -F: ' { print $1 } '`
 	#PART_START=`echo "$PARTED_OUT" | grep ext[24] | awk -F: ' { print substr($2,1,length($2)-1) } '`
     PART_NO=2
@@ -277,9 +281,9 @@ function resize_qcow2() {
 
 	let PART_NEW_SIZE=$DATA_SIZE*$BLOCK_SIZE
 	let PART_NEW_END=$PART_START+$PART_NEW_SIZE
-    ACT1=`parted -s "$NBD_DEV" rm ${PART_NO}`
-    ACT2=`parted -s "$NBD_DEV" unit B mkpart primary $PART_START $PART_NEW_END`
-    NEW_IMG_SIZE=`parted -s -m "$NBD_DEV" unit B print free | tail -1 | awk -F: ' { print substr($2,1,length($2)-1) } '`
+    ACT1=`parted -s "/dev/${NBD_DEV}" rm ${PART_NO}`
+    ACT2=`parted -s "/dev/${NBD_DEV}" unit B mkpart primary $PART_START $PART_NEW_END`
+    NEW_IMG_SIZE=`parted -s -m "/dev/${NBD_DEV}" unit B print free | tail -1 | awk -F: ' { print substr($2,1,length($2)-1) } '`
     ROOT_PART_START=$PART_START
     ROOT_PART_SIZE_BYTES=$PART_NEW_SIZE
     ROOT_PART_BLOCK_SIZE=$BLOCK_SIZE
@@ -417,3 +421,4 @@ function make_bootable_image() {
 	rm -f "${EXPORT_QCOW2}"
 }
 export -f make_bootable_image
+

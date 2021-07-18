@@ -5,7 +5,9 @@ if [ "$(id -u)" != "0" ]; then
 		exit 1
 fi
 
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+rootdir=`dirname $(readlink -f "${BASH_SOURCE[0]}")`
+
+source ${rootdir}/scripts/lib_nbd_img_handling
 
 progname=$(basename $0)
 
@@ -14,79 +16,38 @@ function usage()
 	cat << HEREDOC
 
 Usage:
+    Mount Image : $progname [--connect]      <path to qcow2 image>
+    Mount Image : $progname [--connect-raw]  <path to raw image>
+    Mount Image : $progname [--disconnect]   <nbd device basename>
     Mount Image : $progname [-m|--mount]     <path to qcow2 image> <mount point>
     Mount Image : $progname [-r|--mount-raw] <path to raw image>   <mount point>
-    Umount Image: $progname [-u|--umount]    [-n <nbd-device>]     <mount point>
+    Umount Image: $progname [-u|--umount]                          <mount point>
     Cleanup NBD : $progname [--cleanup]
 
    arguments:
      -h, --help           show this help message and exit
      -c, --cleanup        cleanup orphaned device mappings
      -C, --force-cleanup  forcefully cleanup orphaned or still connected device mappings
-     -m, --mount          mount image
+     --connect            connect qcow2 image
+     --connect-raw        connect raw image
+     --disconnect         disconnect connected qcow2 image
+     -m, --mount          mount qcow2 image
      -r, --mount-raw      mount raw image
      -u, --umount         umount image
-     -n, --nbd-device     nbd device
 
    ./$progname --mount --image <your image> --mount-point <your path>
 
 HEREDOC
 }
 
+CONNECT=0
+DISCONNECT=0
 MOUNT=0
 RAW_IMAGE=0
 UMOUNT=0
 IMAGE=""
 MOUNTPOINT=""
-NBD_DEV=
-
-nbd_cleanup() {
-	DEVS="$(lsblk | grep nbd | grep disk | cut -d" " -f1)"
-	if [ ! -z "${DEVS}" ]; then
-		for d in $DEVS; do
-			if [ ! -z "${d}" ]; then
-				QDEV="$(ps xa | grep $d | grep -v grep)"
-				if [ -z "${QDEV}" ]; then
-					kpartx -d /dev/$d && echo "Unconnected device map removed: /dev/$d"
-				fi
-			fi
-		done
-	fi
-}
-
-force_nbd_cleanup() {
-	DEVS="$(lsblk | grep nbd | grep disk | cut -d" " -f1)"
-	if [ ! -z "${DEVS}" ]; then
-		for d in $DEVS; do
-			if [ ! -z "${d}" ]; then
-				QDEV="$(ps xa | grep $d | grep -v grep)"
-				if [ -z "${QDEV}" ]; then
-					kpartx -d /dev/$d && echo "Unconnected device map removed: /dev/$d"
-                else
-					kpartx -d /dev/$d && echo "Connected device map removed (force): /dev/$d"
-				fi
-			fi
-		done
-	fi
-}
-
-find_nbd() {
-    mntpoint="${1}"
-
-	MAIN_DEVS="$(lsblk | grep nbd | grep disk | cut -d" " -f1)"
-	if [ ! -z "${MAIN_DEVS}" ]; then
-		for md in $MAIN_DEVS; do
-			if [ ! -z "${md}" ]; then
-                #SUB_DEVS="$(lsblk -l "/dev/${md}" | grep "${md}p" | cut -d" " -f1)"
-                if lsblk -l "/dev/${md}" | grep "${mntpoint}" >& /dev/null ; then 
-                    echo "/dev/${md}"
-                    return 0;
-                fi
-			fi
-		done
-	fi
-    return 1;
-}
+NBD_BASENAME=""
 
 error_exit() {
     echo "$@"
@@ -103,12 +64,22 @@ while [[ $# -gt 0 ]]; do
             exit
 		;;
 		-c|--cleanup)
-			nbd_cleanup
+			lib_nbd_cleanup
             exit
 		;;
 		-C|--force-cleanup)
-			force_nbd_cleanup
+			lib_force_nbd_cleanup
             exit
+		;;
+		--connect-raw)
+			CONNECT=1
+            RAW_IMAGE=1
+		;;
+		--connect)
+			CONNECT=1
+		;;
+		--disconnect)
+			DISCONNECT=1
 		;;
 		-r|--mount-raw)
 			MOUNT=1
@@ -120,12 +91,20 @@ while [[ $# -gt 0 ]]; do
 		-u|--umount)
 			UMOUNT=1
 		;;
-		-n|--nbd-device)
-			shift
-			NBD_DEV="$1"
-		;;
 		*)
-            if [ $MOUNT -eq 1 ]; then
+            if [ $CONNECT -eq 1 ]; then
+                if [ -z "$IMAGE" ]; then
+                    IMAGE=$1
+                else
+                    error_exit "Unknown connect option '$key'"
+                fi
+            elif [ $DISCONNECT -eq 1 ]; then
+                if [ -z "$NBD_BASENAME" ]; then
+                    NBD_BASENAME=$1
+                else
+                    error_exit "Unknown disconnect option '$key'"
+                fi
+            elif [ $MOUNT -eq 1 ]; then
                 if [ -z "$IMAGE" ]; then
                     IMAGE=$1
                 elif [ -z "$MOUNTPOINT" ]; then
@@ -148,9 +127,34 @@ while [[ $# -gt 0 ]]; do
 	shift
 done
 
-if [ "${MOUNT}" = "1" ] && [ "${UMOUNT}" = "1" ]; then
+CTR_MOUNTCONN=0
+if [ "${MOUNT}" = "1" ]; then
+    let CTR_MOUNTCONN=${CTR_MOUNTCONN}+1
+fi
+if [ "${UMOUNT}" = "1" ]; then
+    let CTR_MOUNTCONN=${CTR_MOUNTCONN}+1
+fi
+if [ "${CONNECT}" = "1" ]; then
+    let CTR_MOUNTCONN=${CTR_MOUNTCONN}+1
+fi
+if [ "${DISCONNECT}" = "1" ]; then
+    let CTR_MOUNTCONN=${CTR_MOUNTCONN}+1
+fi
+if [ "${CTR_MOUNTCONN}" -gt 1 ]; then
 	usage
-	echo "Concurrent mount options not possible."
+	echo "Concurrent mount/connect options not possible."
+	exit
+fi
+
+if [ "${CONNECT}" = "1" ] && [ -z "${IMAGE}" ]; then
+	usage
+	echo "Can not connect to image. Image path missing."
+	exit
+fi
+
+if [ "${DISCONNECT}" = "1" ] && [ -z "${NBD_BASENAME}" ]; then
+	usage
+	echo "Can not disconnect nbd device. NBD basename missing."
 	exit
 fi
 
@@ -176,27 +180,25 @@ if [ -n "${IMAGE}" -a ! -f "${IMAGE}" ]; then
     exit 1
 fi
 
-if [ ! -d "${MOUNTPOINT}" ]; then
-    echo "Mountpoint ${MOUNTPOINT} not existing."
-    exit 1
-fi
-
-source ${BASE_DIR}/scripts/qcow2_handling
-
-if [ "${MOUNT}" = "1" ]; then
+if [ "${CONNECT}" = "1" ]; then
+    nbd_dev=
     if [ "${RAW_IMAGE}" = "1" ]; then
-        mount_rawimage "${IMAGE}" "${MOUNTPOINT}"
+        nbd_dev=$(lib_connect_blkdev2 "${IMAGE}" "raw")
     else
-        mount_qimage "${IMAGE}" "${MOUNTPOINT}"
+        nbd_dev=$(lib_connect_blkdev2 "${IMAGE}" "qcow2")
     fi
-    echo Using NBD_DEV $NBD_DEV
+    echo ${nbd_dev}
+elif [ "${DISCONNECT}" = "1" ]; then
+    lib_disconnect_blkdev "${NBD_BASENAME}"
+elif [ "${MOUNT}" = "1" ]; then
+    nbd_dev=
+    if [ "${RAW_IMAGE}" = "1" ]; then
+        nbd_dev=$(lib_mount_image3 "${IMAGE}" "raw" "${MOUNTPOINT}")
+    else
+        nbd_dev=$(lib_mount_image3 "${IMAGE}" "qcow2" "${MOUNTPOINT}")
+    fi
+    echo ${nbd_dev}
 elif [ "${UMOUNT}" = "1" ]; then
-    if [ -z "${NBD_DEV}" ] ; then
-        NBD_DEV=$(find_nbd ${MOUNTPOINT})
-        if [ -z "${NBD_DEV}" ] ; then
-            echo "umount: NBD_DEV not set and not found for ${MOUNTPOINT}."
-        fi
-    fi
-	umount_image "${MOUNTPOINT}"
+    lib_umount_image1 "${MOUNTPOINT}"
 fi
 

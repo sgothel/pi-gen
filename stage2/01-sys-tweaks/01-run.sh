@@ -225,7 +225,7 @@ on_chroot <<EOF
     fi
     if [ "${TARGET_RASPI}" != "1" ]; then
         update-grub
-        grub-install ${NBD_DEV}
+        grub-install /dev/${NBD_DEV}
     fi
 EOF
 

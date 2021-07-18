@@ -1,0 +1,266 @@
+#!/bin/bash
+
+#
+# NBD and Image stateless reusable functions
+#
+
+#
+# All functions with prefix 'lib_' are reusable,
+# i.e. stateless - not using any fixed variables.
+#
+
+lib_echo_err() { printf "%s\n" "$*" >&2; }
+export -f lib_echo_err
+
+# Reusable: find and initialize free block device nodes
+# Return: new nbd device basename
+lib_init_nbd() {
+    local res=
+	modprobe nbd max_part=16
+    for x in /sys/class/block/nbd* ; do
+        S=`cat $x/size`
+        if [ "$S" == "0" ] ; then
+            res=$(basename $x)
+            break
+        fi
+    done
+    echo -n "${res}"
+}
+export -f lib_init_nbd
+
+# Input {1}: error prefix string (Caller function name)
+# Input {2}: image-type: "raw" or "qcow2"
+# Return: exit code 0 (OK) or 1 (error)
+lib_check_imagetypearg() {
+    if [ -z "${2}" ] ; then
+        lib_echo_err "${1}: image-type not given. Exit."
+        return 1
+    elif [ "${2}" != "raw" -a "${2}" != "qcow2" ]; then
+        lib_echo_err "${1}: image-type must be either raw or qcow, given was ${2}. Exit."
+        return 1
+    fi
+    return 0
+}
+export -f lib_check_imagetypearg
+
+# Reusable: connect qcow2 image with known format to block device
+# Input {1}: image-file name
+# Input {2}: image-type: "raw" or "qcow2"
+# Input {3}: nbd device basename
+# Return: exit code 0 (OK) or 1 (error)
+lib_connect_blkdev3() {
+    if [ -z "${1}" ] ; then
+        lib_echo_err "lib_connect_blkdev3: image-file name not given. Exit."
+        exit 1;
+    fi
+    if ! lib_check_imagetypearg "lib_connect_blkdev3" "${2}" ; then
+        exit 1;
+    fi
+    if [ -z "${3}" ] ; then
+        lib_echo_err "lib_connect_blkdev3: nbd device basename not given. Exit."
+        exit 1;
+    fi
+
+    local img_file=${1}
+    local img_type=${2}
+    local nbd_dev=${3}
+
+    if [ "${img_type}" = "raw" ]; then
+        qemu-nbd --discard=unmap -f raw -c /dev/${nbd_dev} "${img_file}"
+    else
+        qemu-nbd --discard=unmap -c /dev/${nbd_dev} "${img_file}"
+    fi
+	sync
+	kpartx -a /dev/${nbd_dev}
+	sync
+    return 0
+}
+export -f lib_connect_blkdev3
+
+# Reusable: connect qcow2 image with known format to block device
+# Input {1}: image-file name
+# Input {2}: image-type: "raw" or "qcow2"
+# Return: new nbd device basename
+lib_connect_blkdev2() {
+    if [ -z "${1}" ] ; then
+        lib_echo_err "lib_connect_blkdev2: image-file name not given. Exit."
+        exit 1;
+    fi
+    if ! lib_check_imagetypearg "lib_connect_blkdev2" "${2}" ; then
+        exit 1;
+    fi
+
+    local img_file=${1}
+    local img_type=${2}
+
+	local nbd_dev=$(lib_init_nbd)
+    if [ -z "${nbd_dev}" ] ; then
+        lib_echo_err "lib_connect_blkdev2: NBD device not determined. Exit."
+        exit 1;
+    fi
+    if ! lib_connect_blkdev3 "${img_file}" "${img_type}" "${nbd_dev}" ; then
+        exit 1;
+    fi
+    echo -n "${nbd_dev}"
+}
+export -f lib_connect_blkdev2
+
+# Reusable: disconnect image from block device
+# Input {1}: nbd device basename
+lib_disconnect_blkdev() {
+    if [ -z "${1}" ] ; then
+        lib_echo_err "lib_disconnect_blkdev: NBD device basename not given._Exit."
+        exit 1;
+    fi
+    local nbd_dev=${1}
+	kpartx -d /dev/${nbd_dev}
+	qemu-nbd -d /dev/${nbd_dev}
+}
+export -f lib_disconnect_blkdev
+
+lib_nbd_cleanup() {
+	DEVS="$(lsblk | grep nbd | grep disk | cut -d" " -f1)"
+	if [ ! -z "${DEVS}" ]; then
+		for d in $DEVS; do
+			if [ ! -z "${d}" ]; then
+				QDEV="$(ps xa | grep $d | grep -v grep)"
+				if [ -z "${QDEV}" ]; then
+					kpartx -d /dev/${d} && qemu-nbd -d /dev/${d} && echo "Unconnected device map removed: /dev/${d}"
+				fi
+			fi
+		done
+	fi
+}
+export -f lib_nbd_cleanup
+
+lib_force_nbd_cleanup() {
+	DEVS="$(lsblk | grep nbd | grep disk | cut -d" " -f1)"
+	if [ ! -z "${DEVS}" ]; then
+		for d in $DEVS; do
+			if [ ! -z "${d}" ]; then
+				QDEV="$(ps xa | grep $d | grep -v grep)"
+				if [ -z "${QDEV}" ]; then
+					kpartx -d /dev/${d} && qemu-nbd -d /dev/${d} && echo "Unconnected device map removed: /dev/${d}"
+                else
+					kpartx -d /dev/${d} && qemu-nbd -d /dev/${d} && echo "Connected device map removed (force): /dev/${d}"
+				fi
+			fi
+		done
+	fi
+}
+export -f lib_force_nbd_cleanup
+
+# Reusable: mount image
+# Input {1}: image-file name
+# Input {2}: image-type: "raw" or "qcow2"
+# Input {3}: mountpoint
+# Return: nbd device basename
+lib_mount_image3() {
+    if [ -z "${1}" ] ; then
+        lib_echo_err "lib_mount_image3: Usage <image-file> <image-type> <mountpoint>"
+        lib_echo_err "lib_mount_image3: image-file not given. Exit."
+        exit 1;
+    fi
+    if ! lib_check_imagetypearg "lib_mount_image3" "${2}" ; then
+        exit 1;
+    fi
+    if [ -z "${3}" ] ; then
+        lib_echo_err "lib_mount_image3: Usage <image-file> <image-type> <mountpoint>"
+        lib_echo_err "lib_mount_image3: mountpoint not given. Exit."
+        exit 1;
+    fi
+    local img_file=${1}
+    local img_type=${2}
+    local mnt_dir=${3}
+
+	local nbd_dev=$(lib_connect_blkdev2 "${img_file}" "${img_type}")
+    if [ -z "${nbd_dev}" ] ; then
+        lib_echo_err "lib_mount_image3: NBD device not determined. Exit."
+        exit 1;
+    fi
+
+    # Use heuristic: p1 /boot, p2 /
+    local p1dev="/dev/mapper/${nbd_dev}p1"
+    local p2dev="/dev/mapper/${nbd_dev}p2"
+    if [ -e ${p1dev} -a -e ${p2dev} ]; then
+        mount -v ${p2dev} "${mnt_dir}" >&2
+        mkdir -p "${mnt_dir}/boot"
+        mount -v ${p1dev} "${mnt_dir}/boot" >&2
+    elif [ -e ${p1dev} ]; then
+        mount -v ${p1dev} "${mnt_dir}" >&2
+    fi
+    echo -n "${nbd_dev}"
+}
+export -f lib_mount_image3
+
+# Reusable: lib_find_nbd
+# Input {1}: mountpoint
+# Return: nbd device basename
+lib_find_nbd() {
+    if [ -z "${1}" ] ; then
+        lib_echo_err "lib_find_nbd: mountpoint not given. Exit."
+        exit 1;
+    fi
+    local mnt_dir=${1}
+
+	MAIN_DEVS="$(lsblk | grep nbd | grep disk | cut -d" " -f1)"
+	if [ ! -z "${MAIN_DEVS}" ]; then
+		for md in $MAIN_DEVS; do
+			if [ ! -z "${md}" ]; then
+                #SUB_DEVS="$(lsblk -l "/dev/${md}" | grep "${md}p" | cut -d" " -f1)"
+                if lsblk -l "/dev/${md}" | grep "${mnt_dir}" >& /dev/null ; then 
+                    echo -n "${md}"
+                    return 0;
+                fi
+			fi
+		done
+	fi
+    return 1;
+}
+
+# Reusable: umount image
+# Input {1}: mountpoint
+# Input {2}: nbd device basename
+lib_umount_image2() {
+    if [ -z "${1}" ] ; then
+        lib_echo_err "lib_umount_image2: mountpoint not given. Exit."
+        exit 1;
+    fi
+    if [ -z "${2}" ] ; then
+        lib_echo_err "lib_umount_image2: nbd device basename not given. Exit."
+        exit 1;
+    fi
+    local mnt_dir=${1}
+    local nbd_dev=${2}
+
+	sync
+	while mount | grep -q "${mnt_dir}"; do
+		local LOCS
+		LOCS=$(mount | grep "${mnt_dir}" | cut -f 3 -d ' ' | sort -r)
+		for loc in ${LOCS}; do
+			while mountpoint -q "${loc}" && ! umount "${loc}"; do
+				sleep 0.1
+			done
+		done
+	done
+    lib_disconnect_blkdev "${nbd_dev}"
+}
+export -f lib_umount_image2
+
+# Reusable: umount image, using 'lib_find_nbd <mountpoint>' to determine the nbd device
+# Input {1}: mountpoint
+lib_umount_image1() {
+    if [ -z "${1}" ] ; then
+        lib_echo_err "lib_umount_image1: mountpoint not given. Exit."
+        exit 1;
+    fi
+    local mnt_dir=${1}
+    local nbd_dev=$(lib_find_nbd "${mnt_dir}")
+    if [ -z "${nbd_dev}" ] ; then
+        lib_echo_err "lib_umount_image: nbd device basename not found via mountpoint ${mnt_dir}. Exit."
+        exit 1;
+    fi
+    lib_umount_image2 "${mnt_dir}" "${nbd_dev}"
+}
+export -f lib_umount_image1
+
