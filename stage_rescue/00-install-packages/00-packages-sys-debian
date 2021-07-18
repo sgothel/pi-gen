@@ -1,0 +1,17 @@
+# debootstrap and iso-image requirements
+debootstrap xorriso live-build syslinux isolinux squashfs-tools genisoimage memtest86+
+
+hwinfo dmidecode cpuid cpufrequtils pciutils usbutils hwdata discover
+gnupg gnupg-agent gnupg2
+git git-buildpackage git-cola git-core git-cvs git-doc git-email git-gui git-man git-svn gitk
+nano pv vim
+gparted ntfs-3g hfsprogs dosfstools chntpw partclone
+xfsdump xfsprogs
+isc-dhcp-client ifupdown network-manager net-tools
+wireless-tools wpasupplicant wpagui
+nfs-common nfs-kernel-server nfswatch
+smbclient cifs-utils
+rsync tcpdump wget openssh-server openssh-client iptables
+lsof rpcbind iptraf iftop wireshark tcpdump pcaputils ngrep
+sharutils psmisc patch less
+

@@ -159,7 +159,7 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
         install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_ro.txt  "${ROOTFS_DIR}/boot/sys_arm64_000/cmdline.txt"
     else
         install -m 644 files/grub/custom.cfg                 "${ROOTFS_DIR}/boot/grub/custom.cfg"
-        sed -i 's/sys_arm64_000/sys_${TARGET_ARCH}_000/g'    "${ROOTFS_DIR}/boot/grub/custom.cfg"
+        sed -i "s/sys_amd64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/grub/custom.cfg"
         cp "${ROOTFS_DIR}/boot/grub/custom.cfg"              "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/"
         sed -i 's/GRUB_DEFAULT=.*$/GRUB_DEFAULT=loop_rootfs/g;s/GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=0/g;s/#GRUB_TERMINAL=.*$/GRUB_TERMINAL=console/g;s/#GRUB_DISABLE_LINUX_UUID=.*$/GRUB_DISABLE_LINUX_UUID=true/g'                    "${ROOTFS_DIR}/etc/default/grub"
         echo "GRUB_DISABLE_LINUX_PARTUUID=true"           >> "${ROOTFS_DIR}/etc/default/grub"

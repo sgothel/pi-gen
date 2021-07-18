@@ -11,7 +11,8 @@ sdir=`dirname $(readlink -f "${BASH_SOURCE[0]}")`
 rootdir=`dirname $sdir`
 
 usage() {
-    echo "Usage: $0 <image-file> <total-size in GiB> <mount-point> <provisioning-dir>"
+    echo "Usage: $0 <image-file> <total-size> <mount-point> <provisioning-dir>"
+    echo "For <total-size> use G for GiB or M for MiB denominator"
 }
 
 if [ -z "${1}" -o -z "${2}" -o -z "${3}" -o -z "${4}" ]; then
@@ -19,14 +20,14 @@ if [ -z "${1}" -o -z "${2}" -o -z "${3}" -o -z "${4}" ]; then
     exit 2
 fi
 
-readonly grub_image="data/grub-image01.bin"
+readonly grub_image="data/grub-i386-image01.bin"
 
 IMG_FILE="${1}"
 IMG_FILE_SIZE="${2}"
 MNT_DIR="${3}"
 SRC_DIR="${4}"
 
-dd if=/dev/zero of=${IMG_FILE} bs=4M count=${IMG_FILE_SIZE}G conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes,dsync status=progress
+dd if=/dev/zero of=${IMG_FILE} bs=4M count=${IMG_FILE_SIZE} conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes,dsync status=progress
 
 sfdisk ${IMG_FILE} << EOF
 4MiB,,c,*;

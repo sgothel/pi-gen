@@ -432,8 +432,11 @@ maintenance and allows for more easy customization.
  - **stage3a_dev** - `litexdev system`. Contains full commandline development tools
    and developer library packages based on *stage3a* inclusive *build-essential*, gcc, clang, OpenJDK 11, etc.
 
- - **stage3b** - `desktop system`. Contains a complete desktop system
-   with X11 and LXDE and web browsers.
+ - **stage3b_lxde** - `lxde desktop system`. Contains a complete desktop system
+   with X11, LXDE and a web browser. Suitable for `ROOTFS_RO`.
+
+ - **stage3b_kde** - `kde desktop system`. Contains a complete desktop system
+   with X11, KDE Plasma and a web browser. Not yet working well with `ROOTFS_RO`.
 
  - **stage4** - `Python image`. System meant to fit on a 4GB card. This is the
    stage that installs most things to be friendly to new
@@ -442,6 +445,9 @@ maintenance and allows for more easy customization.
  - **stage5** - Full image. More development
    tools, an email client, learning tools like Scratch, specialized packages
    like sonic-pi, office productivity, etc.  
+
+ - **stage_rescue** - `rescue desktop system`. Adds rescue related tools to desktop system,
+   best suited ontop of *stage3b_lxde* for `ROOTFS_RO` to produce a *rescue stick*.
 
 ### Stage specification
 
