@@ -73,7 +73,7 @@ The following environment variables are supported:
      * /boot/ any specific `Raspberry` bootloader
    
    instead, the default tasks are being used:
-     * Install grub
+     * Install GRUB using `timeout 0` for no visible menu.
 
  * `TARGET_ARCH` (Default: `arm64`)
 
@@ -448,6 +448,9 @@ maintenance and allows for more easy customization.
 
  - **stage_rescue** - `rescue desktop system`. Adds rescue related tools to desktop system,
    best suited ontop of *stage3b_lxde* for `ROOTFS_RO` to produce a *rescue stick*.
+
+   If `TARGET_RASPI != 1`, i.e. using a `Debian` system, `memtest86+` is added to `GRUB`,
+   which menu made visible again using `timeout 5`.
 
 ### Stage specification
 

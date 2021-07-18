@@ -169,6 +169,8 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
         rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_linux_xen"
         rm -f                                                "${ROOTFS_DIR}/etc/grub.d/30_os-prober"
         rm -f                                                "${ROOTFS_DIR}/etc/grub.d/30_uefi-firmware"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_memtest86"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_memtest86+"
     fi
 
     install -m 755 files/initramfs/loop_rootfs-premount 	"${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/loop_rootfs"
