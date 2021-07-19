@@ -338,6 +338,8 @@ export USE_QCOW2=1
 export BASE_QCOW2_SIZE=${BASE_QCOW2_SIZE:-15200M}
 source "${SCRIPT_DIR}/qcow2_handling"
 
+export ROOTFS_RO_OVERLAY_TMPFS_SIZE=${ROOTFS_RO_OVERLAY_TMPFS_SIZE:-128M}
+
 dependencies_check "${BASE_DIR}/depends"
 
 #check username is valid

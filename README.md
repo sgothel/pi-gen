@@ -101,18 +101,24 @@ The following environment variables are supported:
 
    If set to one, i.e. `ROOTFS_RO=1`, the root filesystem will be set read-only,
    an `initramfs` is used to load it via `loopfs` 
-   and a `tmpfs` created at boot containing the `overlayfs` mutable storage for
+   and a transient `tmpfs` created at boot containing the `overlayfs` mutable storage for
    ```
    /etc
    /home
    /var
    /srv
+   /root
    ```
 
    Further all `apt-daily` systemd tasks are disabled,
    the ssh host keys are retained while `regenerate_ssh_host_keys` is disabled
    and the final `/boot/config.txt` has `splash` disabled (no rainbow).
    
+ * `ROOTFS_RO_OVERLAY_TMPFS_SIZE` (Default: 128M)
+
+   If using `ROOTFS_RO`, this variable specifies the shared `tmpfs` size
+   for the overlays - see above.
+
  * `REDUCED_FOOTPRINT` (Default: unset)
 
    If set to one, i.e. `REDUCED_FOOTPRINT=1`, 

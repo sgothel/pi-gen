@@ -5,6 +5,7 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
 fi
 install -m 644 files/overlay_mount.service          "${ROOTFS_DIR}/lib/systemd/system/"
 install -m 755 files/overlay_mount	                "${ROOTFS_DIR}/etc/init.d/"
+sed -i "s/OVERLAY_TMPFS_SIZE/${ROOTFS_RO_OVERLAY_TMPFS_SIZE}/g" "${ROOTFS_DIR}/etc/init.d/overlay_mount"
 
 install -m 644 files/rotatelog_init_rootfs.service	"${ROOTFS_DIR}/lib/systemd/system/"
 install -m 755 files/rotatelog_init_rootfs	        "${ROOTFS_DIR}/etc/init.d/"
@@ -60,14 +61,17 @@ on_chroot << EOF
     fi
 
     if [ "${ENABLE_SSH}" == "1" ]; then
+        systemctl unmask ssh
         systemctl enable ssh
     else
         systemctl disable ssh
+        systemctl mask ssh
     fi
     if [ "${ROOTFS_RO}" = "1" ] ; then
         systemctl disable regenerate_ssh_host_keys
         systemctl mask regenerate_ssh_host_keys
     else
+        systemctl unmask regenerate_ssh_host_keys
         systemctl enable regenerate_ssh_host_keys
     fi
 
