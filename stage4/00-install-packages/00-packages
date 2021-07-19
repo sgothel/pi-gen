@@ -1,0 +1,18 @@
+python python3-pygame python-pygame python-tk
+python3 python3-tk thonny
+python3-pgzero
+python-serial python3-serial
+debian-reference-en dillo
+python-pip python3-pip
+python3-numpy
+pigpio python-pigpio python3-pigpio
+pypy
+alacarte
+tree
+libgl1-mesa-dri libgles1 libgles2-mesa xcompmgr
+geany
+python-twython python3-twython
+python-smbus python3-smbus
+python-flask python3-flask
+ffmpeg
+vlc

@@ -1,0 +1,3 @@
+auto /en*=enp
+allow-hotplug enp
+iface enp inet dhcp

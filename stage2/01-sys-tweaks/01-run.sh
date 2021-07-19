@@ -3,15 +3,21 @@
 if [ "${ROOTFS_RO}" = "1" ] ; then
     install -v -m 644 files/fstab-rootfs_ro "${ROOTFS_DIR}/etc/fstab"
 fi
-install -m 644 files/overlay_mount.service	"${ROOTFS_DIR}/lib/systemd/system/"
-install -m 755 files/overlay_mount	        "${ROOTFS_DIR}/etc/init.d/"
+install -m 644 files/overlay_mount.service          "${ROOTFS_DIR}/lib/systemd/system/"
+install -m 755 files/overlay_mount	                "${ROOTFS_DIR}/etc/init.d/"
+sed -i "s/OVERLAY_TMPFS_SIZE/${ROOTFS_RO_OVERLAY_TMPFS_SIZE}/g" "${ROOTFS_DIR}/etc/init.d/overlay_mount"
+
+install -m 644 files/rotatelog_init_rootfs.service	"${ROOTFS_DIR}/lib/systemd/system/"
+install -m 755 files/rotatelog_init_rootfs	        "${ROOTFS_DIR}/etc/init.d/"
 
 install -m 755 files/resize2fs_once	"${ROOTFS_DIR}/etc/init.d/"
 
 install -d				"${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d"
 install -m 644 files/ttyoutput.conf	"${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d/"
 
-install -m 644 files/50raspi		"${ROOTFS_DIR}/etc/apt/apt.conf.d/"
+if [ "${TARGET_RASPI}" = "1" ]; then
+    install -m 644 files/50raspi		"${ROOTFS_DIR}/etc/apt/apt.conf.d/"
+fi
 
 install -m 644 files/console-setup   	"${ROOTFS_DIR}/etc/default/"
 
@@ -20,6 +26,9 @@ install -m 755 files/rc.local		"${ROOTFS_DIR}/etc/"
 if [ -n "${PUBKEY_SSH_FIRST_USER}" ]; then
 	install -v -m 0700 -o 1000 -g 1000 -d "${ROOTFS_DIR}"/home/"${FIRST_USER_NAME}"/.ssh
 	echo "${PUBKEY_SSH_FIRST_USER}" >"${ROOTFS_DIR}"/home/"${FIRST_USER_NAME}"/.ssh/authorized_keys
+    if [ -n "${PUBKEY2_SSH_FIRST_USER}" ]; then
+        echo "${PUBKEY2_SSH_FIRST_USER}" >>"${ROOTFS_DIR}"/home/"${FIRST_USER_NAME}"/.ssh/authorized_keys
+    fi
 	chown 1000:1000 "${ROOTFS_DIR}"/home/"${FIRST_USER_NAME}"/.ssh/authorized_keys
 	chmod 0600 "${ROOTFS_DIR}"/home/"${FIRST_USER_NAME}"/.ssh/authorized_keys
 fi
@@ -30,7 +39,14 @@ s/^#?[[:blank:]]*PasswordAuthentication[[:blank:]]*yes[[:blank:]]*$/PasswordAuth
 fi
 
 on_chroot << EOF
-    systemctl disable hwclock.sh
+    if [ "${TARGET_RASPI}" = "1" ]; then
+        systemctl disable hwclock.sh
+    fi
+
+    # /boot and ROOT are mounted via our 'loop_rootfs' script
+    # without having a live mapping in /etc/fstab.
+    systemctl disable systemd-remount-fs
+    systemctl mask systemd-remount-fs
 
     systemctl disable rsync
     systemctl mask rsync
@@ -39,15 +55,23 @@ on_chroot << EOF
     systemctl disable rpcbind
     systemctl mask rpcbind
 
-    if [ "\${ENABLE_SSH}" == "1" ]; then
+    if [ "${TARGET_RASPI}" != "1" ]; then
+        # ensure sysfsutils is enabled at boot
+        systemctl is-enabled sysfsutils
+    fi
+
+    if [ "${ENABLE_SSH}" == "1" ]; then
+        systemctl unmask ssh
         systemctl enable ssh
     else
         systemctl disable ssh
+        systemctl mask ssh
     fi
     if [ "${ROOTFS_RO}" = "1" ] ; then
         systemctl disable regenerate_ssh_host_keys
         systemctl mask regenerate_ssh_host_keys
     else
+        systemctl unmask regenerate_ssh_host_keys
         systemctl enable regenerate_ssh_host_keys
     fi
 
@@ -56,34 +80,43 @@ on_chroot << EOF
 
         systemctl unmask overlay_mount
         systemctl enable overlay_mount
+
+        systemctl unmask rotatelog_init_rootfs
+        systemctl enable rotatelog_init_rootfs
     else
         systemctl disable overlay_mount
-        systemctl mask overlay_mount
+        systemctl mask    overlay_mount
+
+        systemctl disable rotatelog_init_rootfs
+        systemctl mask    rotatelog_init_rootfs
     fi
 
     # Setup unique system folder /boot/sys_arm64_000
-    mkdir -p /boot/sys_arm64_000
+    mkdir -p /boot/sys_${TARGET_ARCH}_000
 
-    find /boot -maxdepth 1 -name \*.dtb -exec mv \{\} /boot/sys_arm64_000/ \;
+    find /boot -maxdepth 1 -name \*.dtb -exec mv \{\} /boot/sys_${TARGET_ARCH}_000/ \;
 
-    find /boot -maxdepth 1 -name kernel\*.img -exec mv \{\} /boot/sys_arm64_000/ \;
+    find /boot -maxdepth 1 -name kernel\*.img -exec mv \{\} /boot/sys_${TARGET_ARCH}_000/ \;
 
     for i in /boot/COPYING.linux /boot/LICENCE.broadcom \
              /boot/issue.txt /boot/rootfs.img ; do
         if [ -f "\${i}" ]; then
-             mv "\${i}" /boot/sys_arm64_000/
+             mv "\${i}" /boot/sys_${TARGET_ARCH}_000/
         fi
     done
     
     if [ -d /boot/overlays ] ; then
-        mv /boot/overlays /boot/sys_arm64_000/
+        mv /boot/overlays /boot/sys_${TARGET_ARCH}_000/
     fi
 
     for i in /boot/config.txt /boot/cmdline.txt /boot/initrd.img ; do
         if [ -f "\${i}" ]; then
-             mv "\${i}" /boot/sys_arm64_000/\`basename \${i}\`.orig
+             mv "\${i}" /boot/sys_${TARGET_ARCH}_000/\`basename \${i}\`.orig
         fi
     done
+
+    # Allow this partition to be found by loop_rootfs
+    touch /boot/loop_rootfs.id
 
     if [ "${ROOTFS_RO}" = "1" ] ; then
         systemctl disable resize2fs_once
@@ -101,29 +134,63 @@ on_chroot << EOF
         systemctl disable man-db.timer
         systemctl mask man-db.timer
 
-        sed -i -e 's/#Storage=auto/Storage=volatile/g;s/#Compress=yes/Compress=yes/g;s/#RuntimeMaxUse=/RuntimeMaxUse=1M/g;s/#ForwardToSyslog=yes/ForwardToSyslog=no/g;s/#ForwardToWall=yes/ForwardToWall=no/g' /etc/systemd/journald.conf
+        sed -i -e 's/#Storage=auto/Storage=volatile/g;s/#Compress=yes/Compress=yes/g;s/#RuntimeMaxUse=/RuntimeMaxUse=1M/g;s/#ForwardToSyslog=yes/ForwardToSyslog=no/g;s/#ForwardToKMsg=no/ForwardToKMsg=no/g;s/#ForwardToConsole=no/ForwardToConsole=no/g;s/#ForwardToWall=yes/ForwardToWall=no/g;s/#TTYPath=\/dev\/console/TTYPath=\/dev\/tty3/g' /etc/systemd/journald.conf
 
-        sed -i -e 's/MODULES=most/MODULES=dep/g;s/BUSYBOX=auto/BUSYBOX=y/g;s/COMPRESS=gzip/COMPRESS=lzop/g' /etc/initramfs-tools/initramfs.conf
+        if [ "${TARGET_RASPI}" = "1" ]; then
+            sed -i -e 's/MODULES=most/MODULES=dep/g;s/BUSYBOX=auto/BUSYBOX=y/g;s/COMPRESS=gzip/COMPRESS=lzop/g' /etc/initramfs-tools/initramfs.conf
+        else
+            sed -i -e 's/BUSYBOX=auto/BUSYBOX=y/g;s/COMPRESS=gzip/COMPRESS=lzop/g' /etc/initramfs-tools/initramfs.conf
+        fi
 
-        echo "squashfs"     >> /etc/modules
-        echo "squashfs"     >> /etc/initramfs-tools/modules
+        if [ "${TARGET_RASPI}" = "1" ]; then
+            KMODULES="squashfs"
+        else
+            KMODULES="nls_cp437 nls_ascii fat vfat squashfs loop usb-common usbcore libahci ahci libata scsi_mod sd_mod usb-storage"
+        fi
+        for i in \${KMODULES} ; do
+            echo "\$i" >> /etc/modules
+            echo "\$i" >> /etc/initramfs-tools/modules
+        done
     else
         systemctl enable resize2fs_once
     fi
 EOF
 
 if [ "${ROOTFS_RO}" = "1" ] ; then
-    install -m 644 files/boot/config-rootfs_ro.txt 	     "${ROOTFS_DIR}/boot/config.txt"
-    install -m 644 files/boot/config-rootfs_ro.txt 	     "${ROOTFS_DIR}/boot/sys_arm64_000/config.txt"
-    install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_ro.txt  "${ROOTFS_DIR}/boot/sys_arm64_000/cmdline.txt"
+    if [ "${TARGET_RASPI}" = "1" ]; then
+        install -m 644 files/boot/config-rootfs_ro.txt 	     "${ROOTFS_DIR}/boot/config.txt"
+        install -m 644 files/boot/config-rootfs_ro.txt 	     "${ROOTFS_DIR}/boot/sys_arm64_000/config.txt"
+        install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_ro.txt  "${ROOTFS_DIR}/boot/sys_arm64_000/cmdline.txt"
+    else
+        install -m 644 files/grub/custom.cfg                 "${ROOTFS_DIR}/boot/grub/custom.cfg"
+        sed -i "s/sys_amd64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/grub/custom.cfg"
+        cp "${ROOTFS_DIR}/boot/grub/custom.cfg"              "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/"
+        sed -i 's/GRUB_DEFAULT=.*$/GRUB_DEFAULT=loop_rootfs/g;s/GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=0/g;s/#GRUB_TERMINAL=.*$/GRUB_TERMINAL=console/g;s/#GRUB_DISABLE_LINUX_UUID=.*$/GRUB_DISABLE_LINUX_UUID=true/g'                    "${ROOTFS_DIR}/etc/default/grub"
+        echo "GRUB_DISABLE_LINUX_PARTUUID=true"           >> "${ROOTFS_DIR}/etc/default/grub"
+        echo "GRUB_DISABLE_RECOVERY=true"                 >> "${ROOTFS_DIR}/etc/default/grub"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/05_debian_theme"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/10_linux"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_linux_xen"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/30_os-prober"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/30_uefi-firmware"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_memtest86"
+        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_memtest86+"
+    fi
 
-    install -m 755 files/initramfs/loop_rootfs 	"${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/"
+    install -m 755 files/initramfs/loop_rootfs-premount 	"${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/loop_rootfs"
+    sed -i 's/sys_arm64_000/sys_${TARGET_ARCH}_000/g' "${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/loop_rootfs"
+    if [ "${TARGET_RASPI}" != "1" ]; then
+        sed -i 's/USES_RASPI_CONFIG=1/USES_RASPI_CONFIG=0/g' "${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/loop_rootfs"
+    fi
+    install -m 755 files/initramfs/loop_rootfs-bottom 	"${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-bottom/loop_rootfs"
     install -m 755 files/initramfs/fsck_custom 	"${ROOTFS_DIR}/etc/initramfs-tools/hooks/"
     install -m 755 files/initramfs/extra_execs  "${ROOTFS_DIR}/etc/initramfs-tools/hooks/"
 else
-    install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/config.txt"
-    install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/sys_arm64_000/config.txt"
-    install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_rw.txt  "${ROOTFS_DIR}/boot/sys_arm64_000/cmdline.txt"
+    if [ "${TARGET_RASPI}" = "1" ]; then
+        install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/config.txt"
+        install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/sys_arm64_000/config.txt"
+        install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_rw.txt  "${ROOTFS_DIR}/boot/sys_arm64_000/cmdline.txt"
+    fi
 fi
 
 if [ "${USE_QEMU}" = "1" ]; then
@@ -143,15 +210,38 @@ on_chroot <<EOF
     setupcon --force --save-only -v
     usermod --pass='*' root
 
-    if [ "${ROOTFS_RO}" = "1" ] ; then
+    if [ "${ROOTFS_RO}" = "1" ]; then
         KVERSION=\$(ls /lib/modules/ | tail -n 1)
-        echo "mkinitramfs for kernel version: \${KVERSION}"
-        /usr/sbin/mkinitramfs -o /boot/sys_arm64_000/initrd.img \${KVERSION}
+        if [ "${TARGET_RASPI}" = "1" ]; then
+            echo "mkinitramfs for kernel version: \${KVERSION}"
+            /usr/sbin/mkinitramfs -o /boot/sys_${TARGET_ARCH}_000/initrd.img \${KVERSION}
+        else
+            update-initramfs -u -k \${KVERSION}
+            if [ -f "/boot/vmlinuz-\${KVERSION}" ] ; then
+                mv -f "/boot/vmlinuz-\${KVERSION}" /boot/sys_${TARGET_ARCH}_000/vmlinuz
+            fi
+            if [ -f "/boot/initrd.img-\${KVERSION}" ] ; then
+                mv -f "/boot/initrd.img-\${KVERSION}" /boot/sys_${TARGET_ARCH}_000/initrd.img
+            fi
+            if [ -f "/boot/config-\${KVERSION}" ] ; then
+                mv -f "/boot/config-\${KVERSION}" /boot/sys_${TARGET_ARCH}_000/config
+            fi
+            if [ -f "/boot/System.map-\${KVERSION}" ] ; then
+                mv -f "/boot/System.map-\${KVERSION}" /boot/sys_${TARGET_ARCH}_000/System.map
+            fi
+        fi
 
         mkdir -p /data/sdcard
         find  /boot/ -maxdepth 1 -type f \
               -exec cp -d --preserve=all \{\} /data/sdcard/ \;
-        cp -a /boot/sys_arm64_000 /data/sdcard/
+        cp -a /boot/sys_${TARGET_ARCH}_000 /data/sdcard/
+    fi
+    if [ "${TARGET_RASPI}" != "1" ]; then
+        update-grub
+        grub-install --force-file-id --modules="gzio part_msdos fat" /dev/${NBD_DEV}
+
+        # Remove storage device related 'search.fs_uuid' and allow multi homing
+        rm -f /boot/grub/i386-pc/load.cfg
     fi
 EOF
 

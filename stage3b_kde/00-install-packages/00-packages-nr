@@ -1,0 +1,6 @@
+mousepad
+kde-plasma-desktop kde-baseapps kate okular kdeadmin kdenetwork plasma-nm kdeutils kde-style-breeze
+kdeconnect kdiff3 krdc partitionmanager ksystemlog
+zenity xdg-utils
+gvfs-backends gvfs-fuse
+lightdm gnome-themes-standard gnome-icon-theme

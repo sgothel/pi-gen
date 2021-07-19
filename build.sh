@@ -1,8 +1,13 @@
 #!/bin/bash -e
 
+export DEBIAN_FRONTEND=noninteractive
+export APT_GET_INSTALL_OPTS='-o APT::Acquire::Retries=3 -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"'
+
 # shellcheck disable=SC2119
 run_sub_stage()
 {
+    local packfile;
+    local PACKAGES;
 	log "Begin ${SUB_STAGE_DIR}"
 	pushd "${SUB_STAGE_DIR}" > /dev/null
 	for i in {00..99}; do
@@ -16,6 +21,47 @@ EOF
 
 			log "End ${SUB_STAGE_DIR}/${i}-debconf"
 		fi
+		if [ "${TARGET_RASPI}" = "1" -a \( -f "${i}-packages-sys-raspi" -o -f "${i}-packages-sys-raspi-${RELEASE}" \) ]; then
+            if [ -f "${i}-packages-sys-raspi-${RELEASE}" ]; then
+                packfile="${i}-packages-sys-raspi-${RELEASE}"
+            else
+                packfile="${i}-packages-sys-raspi"
+            fi
+			log "Begin ${SUB_STAGE_DIR}/${packfile}"
+			PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${packfile}")"
+			if [ -n "$PACKAGES" ]; then
+				on_chroot << EOF
+echo "Installing ${packfile} '${PACKAGES}'"
+apt-get ${APT_GET_INSTALL_OPTS} install --no-install-recommends -y $PACKAGES
+EOF
+				if [ "${USE_QCOW2}" = "1" ]; then
+					on_chroot << EOF
+apt-get clean
+EOF
+				fi
+			fi
+			log "End ${SUB_STAGE_DIR}/${packfile}"
+		elif [ "${TARGET_RASPI}" != "1" -a \( -f "${i}-packages-sys-debian" -o -f "${i}-packages-sys-debian-${RELEASE}" \) ]; then
+            if [ -f "${i}-packages-sys-debian-${RELEASE}" ]; then
+                packfile="${i}-packages-sys-debian-${RELEASE}"
+            else
+                packfile="${i}-packages-sys-debian"
+            fi
+			log "Begin ${SUB_STAGE_DIR}/${packfile}"
+			PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${packfile}")"
+			if [ -n "$PACKAGES" ]; then
+				on_chroot << EOF
+echo "Installing ${packfile} '${PACKAGES}'"
+apt-get ${APT_GET_INSTALL_OPTS} install --no-install-recommends -y $PACKAGES
+EOF
+				if [ "${USE_QCOW2}" = "1" ]; then
+					on_chroot << EOF
+apt-get clean
+EOF
+				fi
+			fi
+			log "End ${SUB_STAGE_DIR}/${packfile}"
+		fi
 		if [ -f "${i}-packages-nr" -o -f "${i}-packages-nr-${RELEASE}" ]; then
             if [ -f "${i}-packages-nr-${RELEASE}" ]; then
                 packfile="${i}-packages-nr-${RELEASE}"
@@ -27,7 +73,7 @@ EOF
 			if [ -n "$PACKAGES" ]; then
 				on_chroot << EOF
 echo "Installing ${packfile} '${PACKAGES}'"
-apt-get -o APT::Acquire::Retries=3 install --no-install-recommends -y $PACKAGES
+apt-get ${APT_GET_INSTALL_OPTS} install --no-install-recommends -y $PACKAGES
 EOF
 				if [ "${USE_QCOW2}" = "1" ]; then
 					on_chroot << EOF
@@ -49,10 +95,10 @@ EOF
 				on_chroot << EOF
 echo "Installing ${packfile} '${PACKAGES}'"
 if [ "${INSTALL_RECOMMENDS}" != "1" -o "${REDUCED_FOOTPRINT}" = "1" ]; then
-    apt-get -o APT::Acquire::Retries=3 install --no-install-recommends -y $PACKAGES
+    apt-get ${APT_GET_INSTALL_OPTS} install --no-install-recommends -y $PACKAGES
 else
     # "${INSTALL_RECOMMENDS}" = "1" -a "${REDUCED_FOOTPRINT}" != "1"
-    apt-get -o APT::Acquire::Retries=3 install -y $PACKAGES
+    apt-get ${APT_GET_INSTALL_OPTS} install -y $PACKAGES
 fi
 EOF
 				if [ "${USE_QCOW2}" = "1" ]; then
@@ -107,9 +153,19 @@ EOF
 }
 
 
+contains() { 
+    if [[ $1 =~ (^|[[:space:]])$2($|[[:space:]]) ]]; then 
+        echo -n "1"
+    else 
+        echo -n "0"
+    fi 
+}
+
 run_stage(){
-	log "Begin ${STAGE_DIR}"
 	STAGE="$(basename "${STAGE_DIR}")"
+    SKIP_STAGE=`contains "${SKIP_STAGE_LIST}" ${STAGE}`
+    SKIP_IMAGES=`contains "${SKIP_IMAGES_LIST}" ${STAGE}`
+	log "Begin ${STAGE} ${STAGE_DIR} SKIP(STAGE ${SKIP_STAGE}, IMAGES ${SKIP_IMAGES})"
 
 	pushd "${STAGE_DIR}" > /dev/null
 
@@ -117,17 +173,17 @@ run_stage(){
 	ROOTFS_DIR="${STAGE_WORK_DIR}"/rootfs
 
 	if [ "${USE_QCOW2}" = "1" ]; then 
-		if [ ! -f SKIP ]; then
+        if [ "${SKIP_STAGE}" != "1" ]; then
 			load_qimage
 		fi
 	fi
 	
-	if [ ! -f SKIP_IMAGES ]; then
+    if [ "${SKIP_IMAGES}" != "1" ]; then
 		if [ -f "${STAGE_DIR}/EXPORT_IMAGE" ]; then
 			EXPORT_DIRS="${EXPORT_DIRS} ${STAGE_DIR}"
 		fi
 	fi
-	if [ ! -f SKIP ]; then
+    if [ "${SKIP_STAGE}" != "1" ]; then
 		if [ "${CLEAN}" = "1" ] && [ "${USE_QCOW2}" = "0" ] ; then
 			if [ -d "${ROOTFS_DIR}" ]; then
 				rm -rf "${ROOTFS_DIR}"
@@ -139,7 +195,7 @@ run_stage(){
 			log "End ${STAGE_DIR}/prerun.sh"
 		fi
 		for SUB_STAGE_DIR in "${STAGE_DIR}"/*; do
-			if [ -d "${SUB_STAGE_DIR}" ] && [ ! -f "${SUB_STAGE_DIR}/SKIP" ]; then
+			if [ -d "${SUB_STAGE_DIR}" ]; then
 				run_sub_stage
 			fi
 		done
@@ -161,13 +217,8 @@ if [ "$(id -u)" != "0" ]; then
 	exit 1
 fi
 
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR=`dirname $(readlink -f "${BASH_SOURCE[0]}")`
 export BASE_DIR
-
-if [ -f config ]; then
-	# shellcheck disable=SC1091
-	source config
-fi
 
 while getopts "c:" flag
 do
@@ -175,6 +226,7 @@ do
 		c)
 			EXTRA_CONFIG="$OPTARG"
 			# shellcheck disable=SC1090
+            echo "Reading config from ${EXTRA_CONFIG}"
 			source "$EXTRA_CONFIG"
 			;;
 		*)
@@ -215,18 +267,22 @@ export TARGET_HOSTNAME=${TARGET_HOSTNAME:-raspberrypi}
 export FIRST_USER_NAME=${FIRST_USER_NAME:-pi}
 export FIRST_USER_PASS=${FIRST_USER_PASS:-raspberry}
 export RELEASE=${RELEASE:-buster}
+
+export TARGET_RASPI="${TARGET_RASPI:-1}"
+export TARGET_ARCH="${TARGET_ARCH:-arm64}"
+
 export WPA_ESSID
 export WPA_PASSWORD
 export WPA_COUNTRY
 export ENABLE_SSH="${ENABLE_SSH:-0}"
 export PUBKEY_ONLY_SSH="${PUBKEY_ONLY_SSH:-0}"
 
-export LOCALE_DEFAULT="${LOCALE_DEFAULT:-en_GB.UTF-8}"
+export LOCALE_DEFAULT="${LOCALE_DEFAULT:-en_US.UTF-8}"
 
-export KEYBOARD_KEYMAP="${KEYBOARD_KEYMAP:-gb}"
-export KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT:-English (UK)}"
+export KEYBOARD_KEYMAP="${KEYBOARD_KEYMAP:-us}"
+export KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT:-English (US)}"
 
-export TIMEZONE_DEFAULT="${TIMEZONE_DEFAULT:-Europe/London}"
+export TIMEZONE_DEFAULT="${TIMEZONE_DEFAULT:-Europe/Berlin}"
 
 export GIT_HASH=${GIT_HASH:-"$(git rev-parse HEAD)"}
 
@@ -282,6 +338,8 @@ export USE_QCOW2=1
 export BASE_QCOW2_SIZE=${BASE_QCOW2_SIZE:-15200M}
 source "${SCRIPT_DIR}/qcow2_handling"
 
+export ROOTFS_RO_OVERLAY_TMPFS_SIZE=${ROOTFS_RO_OVERLAY_TMPFS_SIZE:-128M}
+
 dependencies_check "${BASE_DIR}/depends"
 
 #check username is valid
@@ -310,6 +368,12 @@ mkdir -p "${WORK_DIR}"
 log "Begin ${BASE_DIR}"
 
 STAGE_LIST=${STAGE_LIST:-${BASE_DIR}/stage*}
+echo "Running  stages: \"${STAGE_LIST}\""
+
+SKIP_STAGE_LIST=${SKIP_STAGE_LIST:-}
+SKIP_IMAGES_LIST=${SKIP_IMAGES_LIST:-}
+echo "Skipping stages: \"${SKIP_STAGE_LIST}\""
+echo "Skipping images: \"${SKIP_IMAGES_LIST}\""
 
 for STAGE_DIR in $STAGE_LIST; do
 	STAGE_DIR=$(realpath "${STAGE_DIR}")

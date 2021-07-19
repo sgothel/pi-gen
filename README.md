@@ -40,9 +40,18 @@ package is `<tool>[:<debian-package>]`.
 
 ## Config
 
-Upon execution, `build.sh` will source the file `config` in the current
-working directory.  This bash shell fragment is intended to set needed
-environment variables.
+Upon execution, `build.sh` will source the optional given config file, e.g.:
+
+```bash
+    build.sh -c myconfig.cfg
+```
+The given config file is a bash shell fragment, intended to set needed environment variables.
+
+It is also possible to use default values for all or most variables, e.g.:
+
+```bash
+    IMG_NAME='Raspbian' build.sh
+```
 
 The following environment variables are supported:
 
@@ -53,52 +62,84 @@ The following environment variables are supported:
    but you should use something else for a customized version.  Export files
    in stages may add suffixes to `IMG_NAME`.
 
-* `INSTALL_RECOMMENDS` (Default: unset)
+ * `TARGET_RASPI` (Default: `1`)
+
+   If set to `0` (or other than `1`), the `Raspbian` `apt` source 
+   and its packages are **not** being used, i.e. ending up with a vanilla `Debian` installation.
+
+   Further `Raspberry` specific tasks are not performed:
+     * /boot/config.txt
+     * /boot/*/cmdline.txt
+     * /boot/ any specific `Raspberry` bootloader
+   
+   instead, the default tasks are being used:
+     * Install GRUB using `timeout 0` for no visible menu.
+
+ * `TARGET_ARCH` (Default: `arm64`)
+
+   Maybe set to any valid and supported architecture, which are 
+     * arm64
+     * armhf
+     * i386
+     * amd64
+
+* `RELEASE` (Default: `buster`)
+
+   The release version to build images against. Valid values are `jessie`, `stretch`,
+   `buster` and `bullseye`.
+
+ * `INSTALL_RECOMMENDS` (Default: unset)
 
    If set to one, i.e. `INSTALL_RECOMMENDS=1`, 
    installation process will install recommended packages.
    Otherwise (default):
-    * apt selection without recommended and suggested
+     * apt selection without recommended and suggested
 
    Note: `apt cache` is disabled for all target configurations.
 
-* `ROOTFS_RO` (Default: unset)
+ * `ROOTFS_RO` (Default: unset)
 
    If set to one, i.e. `ROOTFS_RO=1`, the root filesystem will be set read-only,
    an `initramfs` is used to load it via `loopfs` 
-   and a `tmpfs` created at boot containing the `overlayfs` mutable storage for
+   and a transient `tmpfs` created at boot containing the `overlayfs` mutable storage for
    ```
    /etc
    /home
    /var
    /srv
+   /root
    ```
 
    Further all `apt-daily` systemd tasks are disabled,
    the ssh host keys are retained while `regenerate_ssh_host_keys` is disabled
    and the final `/boot/config.txt` has `splash` disabled (no rainbow).
    
-* `REDUCED_FOOTPRINT` (Default: unset)
+ * `ROOTFS_RO_OVERLAY_TMPFS_SIZE` (Default: 128M)
+
+   If using `ROOTFS_RO`, this variable specifies the shared `tmpfs` size
+   for the overlays - see above.
+
+ * `REDUCED_FOOTPRINT` (Default: unset)
 
    If set to one, i.e. `REDUCED_FOOTPRINT=1`, 
    installation will attempt to keep the footprint as small as possible.
    This is intended for small devices, perhaps in addition to `ROOTFS_RO=1`.
    The following efforts are made:
-    * apt selection without recommended and suggested
-    * [Reduced Disk Footprint (Ubuntu)](https://wiki.ubuntu.com/ReducingDiskFootprint#Documentation) for 
-      most `/usr/share/doc` and most `locale`s but [ `en*`, `da*`, `de*`, `es*`, `fi*`, `fr*`, `is*`, `nb*`, `ru*`, `sv*`, `zh*` ],
-      i.e. includes [`locale`](https://www.localeplanet.com/icu/) for
-        * English `en`
-        * Danish `da`
-        * German `de`
-        * Icelandic `is`
-        * Spanish `es`
-        * Finnish `fi`
-        * French `fr`
-        * Norwegian Bokmål `nb`
-        * Russia `nb`
-        * Swedish `sv`
-        * Chinese `zh`
+     * apt selection without recommended and suggested
+     * [Reduced Disk Footprint (Ubuntu)](https://wiki.ubuntu.com/ReducingDiskFootprint#Documentation) for 
+       most `/usr/share/doc` and most `locale`s but [ `en*`, `da*`, `de*`, `es*`, `fi*`, `fr*`, `is*`, `nb*`, `ru*`, `sv*`, `zh*` ],
+       i.e. includes [`locale`](https://www.localeplanet.com/icu/) for
+         * English `en`
+         * Danish `da`
+         * German `de`
+         * Icelandic `is`
+         * Spanish `es`
+         * Finnish `fi`
+         * French `fr`
+         * Norwegian Bokmål `nb`
+         * Russia `nb`
+         * Swedish `sv`
+         * Chinese `zh`
 
     It is also **recommended** to not include *stage3b* *stage4* and *stage5* for a small embedded system,
     as they contain heavy window-manager and broader desktop applications, etc.
@@ -107,7 +148,7 @@ The following environment variables are supported:
 
    Note: `apt cache` is disabled for all target configurations.
 
-* `BASE_QCOW2_SIZE` (Default: 15200M)
+ * `BASE_QCOW2_SIZE` (Default: 15200M)
 
    Size of the virtual qcow2 disk given in multiples of 1024, i.e. KiB, MiB or GiB.
    Note: it will not actually use that much of space at once but defines the
@@ -125,11 +166,6 @@ The following environment variables are supported:
 
     Safe: 15200 MiB
    ```
-
-* `RELEASE` (Default: buster)
-
-   The release version to build images against. Valid values are jessie, stretch,
-   buster and bullseye
 
  * `APT_PROXY` (Default: unset)
 
@@ -173,7 +209,7 @@ The following environment variables are supported:
    Setting to '1' enables the QEMU mode - creating an image that can be mounted via QEMU for an emulated
    environment. These images include "-qemu" in the image file name.
 
- * `LOCALE_DEFAULT` (Default: "en_GB.UTF-8" )
+ * `LOCALE_DEFAULT` (Default: "en_US.UTF-8" )
 
    Default system locale.
 
@@ -181,7 +217,7 @@ The following environment variables are supported:
 
    Setting the hostname to the specified value.
 
- * `KEYBOARD_KEYMAP` (Default: "gb" )
+ * `KEYBOARD_KEYMAP` (Default: "us" )
 
    Default keyboard keymap.
 
@@ -189,7 +225,7 @@ The following environment variables are supported:
    keyboard-configuration` and look at the
    `keyboard-configuration/xkb-keymap` value.
 
- * `KEYBOARD_LAYOUT` (Default: "English (UK)" )
+ * `KEYBOARD_LAYOUT` (Default: "English (US)" )
 
    Default keyboard layout.
 
@@ -197,7 +233,7 @@ The following environment variables are supported:
    keyboard-configuration` and look at the
    `keyboard-configuration/variant` value.
 
- * `TIMEZONE_DEFAULT` (Default: "Europe/London" )
+ * `TIMEZONE_DEFAULT` (Default: "Europe/Berlin" )
 
    Default keyboard layout.
 
@@ -220,13 +256,17 @@ The following environment variables are supported:
 
    Setting to `1` will enable ssh server for remote log in. Note that if you are using a common password such as the defaults there is a high risk of attackers taking over you Raspberry Pi.
 
-  * `PUBKEY_SSH_FIRST_USER` (Default: unset)
+ * `PUBKEY_SSH_FIRST_USER` (Default: unset)
 
    Setting this to a value will make that value the contents of the FIRST_USER_NAME's ~/.ssh/authorized_keys.  Obviously the value should
    therefore be a valid authorized_keys file.  Note that this does not
    automatically enable SSH.
 
-  * `PUBKEY_ONLY_SSH` (Default: `0`)
+ * `PUBKEY2_SSH_FIRST_USER` (Default: unset)
+
+   Same as `PUBKEY_SSH_FIRST_USER`, but providing an optional second key for the first user.
+
+ * `PUBKEY_ONLY_SSH` (Default: `0`)
 
    * Setting to `1` will disable password authentication for SSH and enable
    public key authentication.  Note that if SSH is not enabled this will take
@@ -236,66 +276,81 @@ The following environment variables are supported:
 
     If set, then instead of working through the numeric stages in order, this list will be followed. For example setting to `"stage0 stage1 mystage stage2"` will run the contents of `mystage` before stage2. Note that quotes are needed around the list. An absolute or relative path can be given for stages outside the pi-gen directory.
 
-A simple example for building Raspbian:
+ * `SKIP_STAGE_LIST` (default: `""`)
 
-```bash
-IMG_NAME='Raspbian'
-```
+    Space separated list of stages, which shall not be processed, i.e. skipped.
 
-The config file can also be specified on the command line as an argument the `build.sh` or `build-docker.sh` scripts.
+ * `SKIP_IMAGES_LIST` (default: `""`)
 
-```
-./build.sh -c myconfig
-```
+    Space separated list of stages, which shall not produce file images.
 
-This is parsed after `config` so can be used to override values set there.
 
 ## How the build process works
 
-The following process is followed to build images:
+The following process is performed to build images:
 
  * Loop through all of the stage directories in alphanumeric order
 
- * Move on to the next directory if this stage directory contains a file called
-   "SKIP"
+ * Move on to the next directory if this stage directory basename is listed within `SKIP_STAGE_LIST`.
 
  * Run the script ```prerun.sh``` which is generally just used to copy the build
    directory between stages.
 
- * In each stage directory loop through each subdirectory and then run each of the
-   install scripts it contains, again in alphanumeric order. These need to be named
-   with a two digit padded number at the beginning.
-   There are a number of different files and directories which can be used to
-   control different parts of the build process:
+ * In each stage directory, loop through each subdirectory in alphanumeric order
+   and then process each of the files it contains. Both, the subdirectories as well as 
+   the files to be processed need to be prefixed with a two digit padded number.
 
-     - **00-run.sh** - A unix shell script. Needs to be made executable for it to run.
+   The subdirectory's files to be processed are looped through `{00..99}`,
+   used as the two-digit loop index.
 
-     - **00-run-chroot.sh** - A unix shell script which will be run in the chroot
-       of the image build directory. Needs to be made executable for it to run.
+   If existing in the subdirectories, the following files will be processed
+   in the given order during one iteration, where `nn` refers to the current two digit loop index:
 
-     - **00-debconf** - Contents of this file are passed to debconf-set-selections
+     - ***nn*-debconf** - Contents of this file are passed to debconf-set-selections
        to configure things like locale, etc.
 
-     - **00-packages** - A list of packages to install. Can have more than one, space
-       separated, per line.
+     - ***nn*-packages-sys-(raspi|debian)[-*RELEASE*]** - List of system specific packages to install.
+       In case `TARGET_RASPI = "1"` (default), `nn-packages-sys-raspi` are being used, if existing.
 
-     - **00-packages-nr** - As 00-packages, except these will be installed using
-       the ```--no-install-recommends -y``` parameters to apt-get.
+       Otherwise `nn-packages-sys-debian` are being processed, if existing.
 
-     - **00-patches** - A directory containing patch files to be applied, using quilt.
+       If a `RELEASE` specific variant exists, e.g. `00-packages-sys-raspi-bullseye`, it will be used instead 
+       of the generic `00-packages-sys-raspi`.
+
+     - ***nn*-packages-nr[-*RELEASE*]** - A list of packages to install. Can have more than one, space
+       separated, per line. Will always use ```--no-install-recommends -y``` parameters 
+       for apt-get, ignoring `INSTALL_RECOMMENDS`.
+
+       If a `RELEASE` specific variant exists, e.g. `00-packages-nr-bullseye`, it will be used instead 
+       of the generic `00-packages-nr`.
+
+     - ***nn*-packages[-*RELEASE*]** - A list of packages to install. Can have more than one, space
+       separated, per line. Depending on `INSTALL_RECOMMENDS`, recommended packages will be 
+       installed or not.
+
+       If a `RELEASE` specific variant exists, e.g. `00-packages-bullseye`, it will be used instead 
+       of the generic `00-packages`.
+
+     - ***nn*-patches** - A directory containing patch files to be applied, using quilt.
        If a file named 'EDIT' is present in the directory, the build process will
        be interrupted with a bash session, allowing an opportunity to create/revise
        the patches.
 
-  * If the stage directory contains files called "EXPORT_NOOBS" or "EXPORT_IMAGE" then
-    add this stage to a list of images to generate
+     - ***nn*-run.sh** - A unix shell script. Needs to be made executable for it to run.
 
-  * Generate the images for any stages that have specified them
+     - ***nn*-run-chroot.sh** - A unix shell script which will be run in the chroot
+       of the image build directory. Needs to be made executable for it to run.
+
+  * If the stage directory contains a file named `EXPORT_NOOBS` or `EXPORT_IMAGE` 
+    and the stage directory basename is not listed within `SKIP_STAGE_LIST`,
+    the file images for this stage will be generated.
 
 It is recommended to examine build.sh for finer details.
 
 
 ## Docker Build
+
+*Currently untested within this branch of pi-gen!*
 
 Docker can be used to perform the build inside a container. This partially isolates
 the build from the host system, and allows using the script on non-debian based
@@ -305,8 +360,8 @@ some kernel level services for arm emulation (binfmt) and loop devices (losetup)
 To build:
 
 ```bash
-vi config         # Edit your config file. See above.
-./build-docker.sh
+vi myconfig.cfg         # Edit your config file. See above.
+./build-docker.sh -c myconfig.cfg
 ```
 
 If everything goes well, your finished image will be in the `deploy/` folder.
@@ -345,9 +400,9 @@ and `--privileged` options are already set by the script and should not be redef
 
 ## Stage Anatomy
 
-### Raspbian Stage Overview
+### Build Stage Overview
 
-The build of Raspbian is divided up into several stages for logical clarity
+The build is divided up into several stages for logical clarity
 and modularity.  This causes some initial complexity, but it simplifies
 maintenance and allows for more easy customization.
 
@@ -368,7 +423,7 @@ maintenance and allows for more easy customization.
    really usable yet in a traditional sense yet.  Still, if you want minimal,
    this is minimal and the rest you could reasonably do yourself as sysadmin.
 
- - **stage2** - lite system.  This stage produces the Raspbian-Lite image.  It
+ - **stage2** - `lite system`.  This stage produces the `Lite image`.  It
    installs some optimized memory functions, sets timezone and charmap
    defaults, installs fake-hwclock and ntp, wireless LAN and bluetooth support,
    dphys-swapfile, and other basics for managing the hardware.  It also
@@ -377,61 +432,64 @@ maintenance and allows for more easy customization.
 
    Python and Lua are included here, as they are often required by certain setup scripts.
 
- - **stage3a** - litex system. Contains a minimal *xserver-xorg* subset and *dwm* with *stterm*,
+ - **stage3a** - `litex system`. Contains a minimal *xserver-xorg* subset and *dwm* with *stterm*,
     suitable for embedded systems using graphics.
 
- - **stage3a_dev** - litexdev system. Contains full commandline development tools
+ - **stage3a_dev** - `litexdev system`. Contains full commandline development tools
    and developer library packages based on *stage3a* inclusive *build-essential*, gcc, clang, OpenJDK 11, etc.
 
- - **stage3b** - desktop system. Contains a complete desktop system
-   with X11 and LXDE, web browsers, git for development, Raspbian custom UI
-   enhancements, etc.  This is a base desktop system, with some development
-   tools installed.
+ - **stage3b_lxde** - `lxde desktop system`. Contains a complete desktop system
+   with X11, LXDE and a web browser. Suitable for `ROOTFS_RO`.
 
- - **stage4** - Normal Raspbian image. System meant to fit on a 4GB card. This is the
-   stage that installs most things that make Raspbian friendly to new
-   users like system documentation.
+ - **stage3b_kde** - `kde desktop system`. Contains a complete desktop system
+   with X11, KDE Plasma and a web browser. Not yet working well with `ROOTFS_RO`.
 
- - **stage5** - The Raspbian Full image. More development
+ - **stage4** - `Python image`. System meant to fit on a 4GB card. This is the
+   stage that installs most things to be friendly to new
+   users like system documentation and most of `python`.
+
+ - **stage5** - Full image. More development
    tools, an email client, learning tools like Scratch, specialized packages
    like sonic-pi, office productivity, etc.  
 
+ - **stage_rescue** - `rescue desktop system`. Adds rescue related tools to desktop system,
+   best suited ontop of *stage3b_lxde* for `ROOTFS_RO` to produce a *rescue stick*.
+
+   If `TARGET_RASPI != 1`, i.e. using a `Debian` system, `memtest86+` is added to `GRUB`,
+   which menu made visible again using `timeout 5`.
+
 ### Stage specification
 
-If you wish to build up to a specified stage (such as building up to stage 2
-for a lite system), place an empty file named `SKIP` in each of the `./stage`
-directories you wish not to include.
+If you wish to build up to a specified stage (such as building up to `stage2`
+for a lite system), include the stage directory basename in space separated variable `SKIP_STAGE_LIST`.
 
-Then add an empty file named `SKIP_IMAGES` to `./stage4` and `./stage5` (if building up to stage 2) or
-to `./stage2` (if building a minimal system).
+If you wish to not build the file images of a stage, 
+include the stage directory basename in space separated variable `SKIP_IMAGES_LIST`.
 
 ```bash
 # Example for building a lite system
-echo "IMG_NAME='Raspbian'" > config
-touch ./stage3/SKIP ./stage4/SKIP ./stage5/SKIP
-touch ./stage4/SKIP_IMAGES ./stage5/SKIP_IMAGES
-sudo ./build.sh  # or ./build-docker.sh
+echo "IMG_NAME='Raspbian'" > myconfig.cfg
+echo "SKIP_STAGE_LIST='stage3 stage4 stage5'" >> myconfig.cfg
+echo "SKIP_IMAGES_LIST='stage4 stage5'" >> myconfig.cfg
+sudo ./build.sh -c myconfig.cfg  # or ./build-docker.sh -c myconfig.cfg
 ```
 
 If you wish to build further configurations upon (for example) the lite
-system, you can also delete the contents of `./stage3` and `./stage4` and
-replace with your own contents in the same format.
+system, you can create your own custom stages and specify `STAGE_LIST` accordingly.
 
 
 ## Skipping stages to speed up development
 
 If you're working on a specific stage the recommended development process is as
-follows:
+follows, assuming using `myconfig.cfg` for configuration:
 
- * Add a file called SKIP_IMAGES into the directories containing EXPORT_* files
-   (currently stage2, stage4 and stage5)
- * Add SKIP files to the stages you don't want to build. For example, if you're
-   basing your image on the lite image you would add these to stages 3, 4 and 5.
- * Run build.sh to build all stages
- * Add SKIP files to the earlier successfully built stages
+ * Skip image production for all stages but your build target stage: 
+   Add stage basenames to space separated variable `SKIP_IMAGES_LIST` in `myconfig.cfg`.
+ * Run `sudo build.sh -c myconfig.cfg` to build all stages
+ * Skip whole stages passed: Add stage basenames to space separated variable `SKIP_STAGE_LIST` in `myconfig.cfg`.
  * Modify the last stage
- * Rebuild just the last stage using ```sudo CLEAN=1 ./build.sh```
- * Once you're happy with the image you can remove the SKIP_IMAGES files and
+ * Rebuild just the last stage using `sudo ./build.sh -c myconfig.cfg`
+ * Once you're happy with the image you can uncomment the `SKIP_STAGE_LIST` in your `myconfig.cfg` and
    export your image to test
 
 # Regarding Qcow2 image building

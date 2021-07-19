@@ -4,22 +4,16 @@ python3-pgzero
 python3-serial
 #python3-picamera
 debian-reference-en dillo
-raspberrypi-net-mods raspberrypi-ui-mods
+pigpio python3-pigpio
 python3-pip
 python3-numpy
 pypy
-alacarte rc-gui sense-hat
+alacarte
 tree
 libgl1-mesa-dri libgles1 libgles2-mesa xcompmgr
 geany
-piclone
-wiringpi pigpio python3-pigpio raspi-gpio python3-rpi.gpio
-python3-spidev
 python3-twython
 python3-smbus
 python3-flask
-pprompt
-piwiz
-rp-prefapps
 ffmpeg
 vlc

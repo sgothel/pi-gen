@@ -1,0 +1,15 @@
+[Unit]
+Description=Rotates init_rootfs.log if required
+DefaultDependencies=no
+After=systemd-remount-fs.service systemd-udevd.service
+Before=local-fs-pre.target sysinit.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/etc/init.d/rotatelog_init_rootfs start
+
+[Install]
+WantedBy=local-fs-pre.target
+Alias=rotatelog_init_rootfs.service
+

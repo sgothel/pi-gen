@@ -1,0 +1,20 @@
+# debootstrap requirements (pi-gen requirements on target for reproduction)
+coreutils quilt parted qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc qemu-utils kpartx squashfs-tools fatattr
+
+# iso-image requirements
+xorriso live-build syslinux isolinux squashfs-tools genisoimage
+
+hwinfo dmidecode cpuid cpufrequtils pciutils usbutils hwdata discover
+gnupg gnupg-agent gnupg2
+git git-buildpackage git-cola git-core git-cvs git-doc git-email git-gui git-man git-svn gitk
+nano pv vim
+gparted ntfs-3g hfsprogs dosfstools chntpw partclone
+xfsdump xfsprogs
+isc-dhcp-client ifupdown network-manager net-tools
+wireless-tools wpasupplicant wpagui
+nfs-common nfs-kernel-server nfswatch
+smbclient cifs-utils
+rsync tcpdump wget openssh-server openssh-client iptables
+lsof rpcbind iptraf iftop wireshark tcpdump pcaputils ngrep
+sharutils psmisc patch less
+memtest86+

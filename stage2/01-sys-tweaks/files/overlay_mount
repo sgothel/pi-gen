@@ -13,16 +13,20 @@ case "$1" in
     log_daemon_msg "Starting overlay_mount"
     if ! grep "tmpfs /tmp tmpfs" /proc/mounts ; then
         echo "Create and mount tmpfs /tmp"
-        mount -t tmpfs -o rw,suid,dev,exec,nouser,async,noatime,mode=0777,size=64M tmpfs /tmp
+        mount -t tmpfs -o rw,suid,dev,exec,nouser,async,noatime,mode=0777,size=OVERLAY_TMPFS_SIZE tmpfs /tmp
     else
         echo "Reusing mounted tmpfs /tmp"
     fi
     mkdir -p /tmp/overlay/etc/upper /tmp/overlay/etc/work \
              /tmp/overlay/home/upper /tmp/overlay/home/work \
-             /tmp/overlay/var/upper /tmp/overlay/var/work &&
+             /tmp/overlay/var/upper /tmp/overlay/var/work \
+             /tmp/overlay/srv/upper /tmp/overlay/srv/work \
+             /tmp/overlay/root/upper /tmp/overlay/root/work &&
     mount -t overlay overlay -odefaults,noatime,lowerdir=/etc,upperdir=/tmp/overlay/etc/upper,workdir=/tmp/overlay/etc/work /etc &&
     mount -t overlay overlay -odefaults,noatime,lowerdir=/home,upperdir=/tmp/overlay/home/upper,workdir=/tmp/overlay/home/work /home &&
     mount -t overlay overlay -odefaults,noatime,lowerdir=/var,upperdir=/tmp/overlay/var/upper,workdir=/tmp/overlay/var/work /var &&
+    mount -t overlay overlay -odefaults,noatime,lowerdir=/srv,upperdir=/tmp/overlay/srv/upper,workdir=/tmp/overlay/srv/work /srv &&
+    mount -t overlay overlay -odefaults,noatime,lowerdir=/root,upperdir=/tmp/overlay/root/upper,workdir=/tmp/overlay/root/work /root &&
     mkdir -p /var/lib/systemd &&
     echo "done" &&
     log_end_msg $?

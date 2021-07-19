@@ -1,0 +1,32 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          rotatelog_init_rootfs
+# Required-Start:    mountkernfs
+# Required-Stop:     umountroot
+# Default-Start:     S
+# Default-Stop:      0 6
+# Short-Description: Rotates the /boot/init_rootfs.log if having more than 500 lines
+### END INIT INFO
+. /lib/lsb/init-functions
+case "$1" in
+  start)
+    log_daemon_msg "Starting rotatelog_init_rootfs"
+    if [ -f /boot/init_rootfs.log ]; then
+        line_count=$(wc -l /boot/init_rootfs.log | awk ' { print $1 } ')
+        if [ -n "${line_count}" -a ${line_count} -eq ${line_count} 2> /dev/null ]; then
+            # line_count is a number
+            if [ ${line_count} -gt 500 ]; then
+                mv /boot/init_rootfs.log /boot/init_rootfs.bak
+                tail -n 50 /boot/init_rootfs.bak > /boot/init_rootfs.log
+                rm /boot/init_rootfs.bak
+            fi
+        fi
+    fi
+    log_end_msg $?
+    ;;
+  *)
+    echo "Usage: $0 start" >&2
+    exit 3
+    ;;
+esac
+
