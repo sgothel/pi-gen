@@ -1,5 +1,8 @@
-# debootstrap and iso-image requirements
-debootstrap xorriso live-build syslinux isolinux squashfs-tools genisoimage memtest86+
+# debootstrap requirements (pi-gen requirements on target for reproduction)
+coreutils quilt parted qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc qemu-utils kpartx squashfs-tools fatattr
+
+# iso-image requirements
+xorriso live-build syslinux isolinux squashfs-tools genisoimage
 
 hwinfo dmidecode cpuid cpufrequtils pciutils usbutils hwdata discover
 gnupg gnupg-agent gnupg2
@@ -14,4 +17,4 @@ smbclient cifs-utils
 rsync tcpdump wget openssh-server openssh-client iptables
 lsof rpcbind iptraf iftop wireshark tcpdump pcaputils ngrep
 sharutils psmisc patch less
-
+memtest86+
