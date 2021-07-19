@@ -13,6 +13,7 @@ if [ "${TARGET_RASPI}" != "1" -a "${TARGET_ARCH}" = "amd64" ]; then
             . ./zfs-install-debian10.sh
         else
             echo "No ZFS packages provisioned for RELEASE ${RELEASE}"
+            exit 2
         fi
 
         cat ./apt-preferences.d-local-pin-init >> /etc/apt/preferences.d/local-pin-init
