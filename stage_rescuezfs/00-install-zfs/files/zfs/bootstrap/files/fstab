@@ -1,0 +1,3 @@
+proc     /proc           proc   defaults          0       0
+
+# ROOTDEV  /               zfs    defaults,noatime  0       1
