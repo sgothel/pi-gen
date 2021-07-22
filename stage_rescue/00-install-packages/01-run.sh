@@ -28,7 +28,7 @@ on_chroot <<EOF
         # Update grub.cfg for (1 ROOTFS_RO): timeout=5 or (2) normal memtest86+.bin menu entries
         update-grub
 
-        # Remove storage device related 'search.fs_uuid' and allow multi homing
+        # Remove storage device related search.fs_uuid and allow multi homing
         rm -f /boot/grub/i386-pc/load.cfg
     fi
 EOF
