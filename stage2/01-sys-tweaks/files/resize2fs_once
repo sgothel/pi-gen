@@ -26,10 +26,11 @@ case "$1" in
             PART_NEW_END=`parted -s -m ${ROOT_DEV} unit B print free | tail -1 | awk -F: ' { print substr($3,1,length($3)-1) } '`
             if [ -n "${PART_END}" -a -n "${PART_NEW_END}" -a ${PART_NEW_END} -gt ${PART_END} ]; then
                 echo "Resize partition ${PART_NO} from ${PART_START} - ${PART_END} to ${PART_NEW_END}"
-                # Nope: parted -s ${ROOT_DEV} unit B resizepart ${PART_NO} ${PART_NEW_END}
-                # Nope: parted -s ${ROOT_DEV} rm ${PART_NO}
-                # Nope: parted -s ${ROOT_DEV} unit B mkpart primary ${PART_START} ${PART_NEW_END}
-                parted "${ROOT_DEV}" ---pretend-input-tty <<EOF
+                if parted -s ${ROOT_DEV} unit B resizepart ${PART_NO} ${PART_NEW_END} ; then
+                    echo "Resize partition OK (scripting mode)"
+                else
+                    echo "Resize partition scripting mode failed, trying tty input..."
+                    parted "${ROOT_DEV}" ---pretend-input-tty <<EOF
 unit B
 resizepart
 ${PART_NO}
@@ -37,6 +38,7 @@ Yes
 ${PART_NEW_END}
 quit
 EOF
+                fi
                 echo "Resize fs on partition ${PART_NO}, ${ROOT_PART}"
                 resize2fs $ROOT_PART
             else
