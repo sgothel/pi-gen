@@ -1,8 +1,8 @@
 [Unit]
 Description=Resize the root filesystem to fill partition
 DefaultDependencies=no
-After=systemd-udevd.service
-Before=systemd-remount-fs.service systemd-random-seed.service systemd-journald.service local-fs-pre.target sysinit.target
+After=
+Before=systemd-remount-fs.service local-fs-pre.target sysinit.target
 
 [Service]
 Type=oneshot

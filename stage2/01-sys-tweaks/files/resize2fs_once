@@ -37,8 +37,9 @@ case "$1" in
     else
         echo "ROOT_DEV ${ROOT_DEV} not a substring of ROOT_PART ${ROOT_PART}."
     fi
-    update-rc.d resize2fs_once remove
-    rm -f /etc/init.d/resize2fs_once
+    systemctl disable resize2fs_once
+    systemctl mask resize2fs_once
+    mv /etc/init.d/resize2fs_once /etc/init.d/resize2fs_once.disabled
     log_end_msg $?
     ;;
   *)
