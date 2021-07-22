@@ -10,7 +10,8 @@ sed -i "s/OVERLAY_TMPFS_SIZE/${ROOTFS_RO_OVERLAY_TMPFS_SIZE}/g" "${ROOTFS_DIR}/e
 install -m 644 files/rotatelog_init_rootfs.service	"${ROOTFS_DIR}/lib/systemd/system/"
 install -m 755 files/rotatelog_init_rootfs	        "${ROOTFS_DIR}/etc/init.d/"
 
-install -m 755 files/resize2fs_once	"${ROOTFS_DIR}/etc/init.d/"
+install -m 644 files/resize2fs_once.service	        "${ROOTFS_DIR}/lib/systemd/system/"
+install -m 755 files/resize2fs_once	                "${ROOTFS_DIR}/etc/init.d/"
 
 install -d				"${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d"
 install -m 644 files/ttyoutput.conf	"${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d/"
@@ -41,12 +42,19 @@ fi
 on_chroot << EOF
     if [ "${TARGET_RASPI}" = "1" ]; then
         systemctl disable hwclock.sh
+        plymouth-set-default-theme pix
+    else
+        # No packages, still make sure
+        systemctl disable plymouth
+        systemctl mask plymouth
     fi
 
-    # /boot and ROOT are mounted via our 'loop_rootfs' script
-    # without having a live mapping in /etc/fstab.
-    systemctl disable systemd-remount-fs
-    systemctl mask systemd-remount-fs
+    if [ "${ROOTFS_RO}" = "1" ] ; then
+        # /boot and ROOT are mounted via our 'loop_rootfs' script
+        # without having a live mapping in /etc/fstab.
+        systemctl disable systemd-remount-fs
+        systemctl mask systemd-remount-fs
+    fi
 
     systemctl disable rsync
     systemctl mask rsync
@@ -115,10 +123,10 @@ on_chroot << EOF
         fi
     done
 
-    # Allow this partition to be found by loop_rootfs
-    touch /boot/loop_rootfs.id
-
     if [ "${ROOTFS_RO}" = "1" ] ; then
+        # Allow this partition to be found by loop_rootfs
+        touch /boot/loop_rootfs.id
+
         systemctl disable resize2fs_once
         systemctl mask resize2fs_once
 
@@ -142,16 +150,18 @@ on_chroot << EOF
             sed -i -e 's/BUSYBOX=auto/BUSYBOX=y/g;s/COMPRESS=gzip/COMPRESS=lzop/g' /etc/initramfs-tools/initramfs.conf
         fi
 
+        # Adding both codepage 437 (FAT_CODEPAGE) and 850 to be safe, as fsck.vfat may misbehave
         if [ "${TARGET_RASPI}" = "1" ]; then
-            KMODULES="squashfs"
+            KMODULES="nls_cp437 nls_cp850 nls_ascii squashfs fat vfat drm vc4"
         else
-            KMODULES="nls_cp437 nls_ascii fat vfat squashfs loop usb-common usbcore libahci ahci libata scsi_mod sd_mod usb-storage"
+            KMODULES="nls_cp437 nls_cp850 nls_ascii fat vfat squashfs loop usb-common usbcore libahci ahci libata scsi_mod sd_mod usb-storage drm"
         fi
         for i in \${KMODULES} ; do
             echo "\$i" >> /etc/modules
             echo "\$i" >> /etc/initramfs-tools/modules
         done
     else
+        systemctl unmask resize2fs_once
         systemctl enable resize2fs_once
     fi
 EOF
@@ -159,10 +169,12 @@ EOF
 if [ "${ROOTFS_RO}" = "1" ] ; then
     if [ "${TARGET_RASPI}" = "1" ]; then
         install -m 644 files/boot/config-rootfs_ro.txt 	     "${ROOTFS_DIR}/boot/config.txt"
-        install -m 644 files/boot/config-rootfs_ro.txt 	     "${ROOTFS_DIR}/boot/sys_arm64_000/config.txt"
-        install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_ro.txt  "${ROOTFS_DIR}/boot/sys_arm64_000/cmdline.txt"
+        install -m 644 files/boot/config-rootfs_ro.txt 	     "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
+        install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_ro.txt  "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
+        sed -i "s/sys_arm64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/config.txt"
+        sed -i "s/sys_arm64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
     else
-        install -m 644 files/grub/custom.cfg                 "${ROOTFS_DIR}/boot/grub/custom.cfg"
+        install -m 644 files/grub/custom-rootfs_ro.cfg       "${ROOTFS_DIR}/boot/grub/custom.cfg"
         sed -i "s/sys_amd64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/grub/custom.cfg"
         cp "${ROOTFS_DIR}/boot/grub/custom.cfg"              "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/"
         sed -i 's/GRUB_DEFAULT=.*$/GRUB_DEFAULT=loop_rootfs/g;s/GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=0/g;s/#GRUB_TERMINAL=.*$/GRUB_TERMINAL=console/g;s/#GRUB_DISABLE_LINUX_UUID=.*$/GRUB_DISABLE_LINUX_UUID=true/g'                    "${ROOTFS_DIR}/etc/default/grub"
@@ -178,7 +190,9 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
     fi
 
     install -m 755 files/initramfs/loop_rootfs-premount 	"${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/loop_rootfs"
-    sed -i 's/sys_arm64_000/sys_${TARGET_ARCH}_000/g' "${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/loop_rootfs"
+    sed -i "s/sys_arm64_000/sys_${TARGET_ARCH}_000/g" "${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/loop_rootfs"
+    sed -i "s/BOOT_FSTYPE=.*$/BOOT_FSTYPE=${BOOT_FSTYPE}/g" "${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/loop_rootfs"
+    sed -i "s/BOOT_FSOPTIONS=.*$/BOOT_FSOPTIONS=${BOOT_FSOPTIONS}/g" "${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/loop_rootfs"
     if [ "${TARGET_RASPI}" != "1" ]; then
         sed -i 's/USES_RASPI_CONFIG=1/USES_RASPI_CONFIG=0/g' "${ROOTFS_DIR}/etc/initramfs-tools/scripts/init-premount/loop_rootfs"
     fi
@@ -188,8 +202,8 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
 else
     if [ "${TARGET_RASPI}" = "1" ]; then
         install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/config.txt"
-        install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/sys_arm64_000/config.txt"
-        install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_rw.txt  "${ROOTFS_DIR}/boot/sys_arm64_000/cmdline.txt"
+        install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
+        install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_rw.txt  "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
     fi
 fi
 
@@ -210,8 +224,10 @@ on_chroot <<EOF
     setupcon --force --save-only -v
     usermod --pass='*' root
 
+    KVERSION=\$(ls /lib/modules/ | tail -n 1)
     if [ "${ROOTFS_RO}" = "1" ]; then
-        KVERSION=\$(ls /lib/modules/ | tail -n 1)
+        rm -f /boot/sys_${TARGET_ARCH}_000/initrd.img
+
         if [ "${TARGET_RASPI}" = "1" ]; then
             echo "mkinitramfs for kernel version: \${KVERSION}"
             /usr/sbin/mkinitramfs -o /boot/sys_${TARGET_ARCH}_000/initrd.img \${KVERSION}
@@ -235,10 +251,18 @@ on_chroot <<EOF
         find  /boot/ -maxdepth 1 -type f \
               -exec cp -d --preserve=all \{\} /data/sdcard/ \;
         cp -a /boot/sys_${TARGET_ARCH}_000 /data/sdcard/
+    else
+        if [ "${TARGET_RASPI}" != "1" ]; then
+            update-initramfs -u -k \${KVERSION}
+        fi
     fi
     if [ "${TARGET_RASPI}" != "1" ]; then
         update-grub
-        grub-install --force-file-id --modules="gzio part_msdos fat" /dev/${NBD_DEV}
+        if [ "${ROOTFS_RO}" = "1" ] ; then
+            grub-install --force-file-id --modules="gzio part_msdos fat" /dev/${NBD_DEV}
+        else
+            grub-install --force-file-id --modules="gzio part_msdos fat ext2" /dev/${NBD_DEV}
+        fi
 
         # Remove storage device related 'search.fs_uuid' and allow multi homing
         rm -f /boot/grub/i386-pc/load.cfg

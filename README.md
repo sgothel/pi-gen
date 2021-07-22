@@ -119,6 +119,18 @@ The following environment variables are supported:
    If using `ROOTFS_RO`, this variable specifies the shared `tmpfs` size
    for the overlays - see above.
 
+ * `BOOT_FSTYPE` (Default: `vfat`)
+
+   Allows user to define the `/boot` filesystem type. For Raspberry this **must** be `vfat`, the default.
+   However, as we support other target system, this may be one of: `vfat`, `ext2`, `ext4` or `xfs`.
+
+ * `BOOT_FSOPTIONS` (Default: `rw,noatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,errors=remount-ro`)
+
+   Allows user to define the mount options for the `/boot` filesystem, see `BOOT_FSTYPE`.
+   For `vfat`, only the `codepage 437` is being hardcoded in the `initrd` `loop_rootfs` and scripts, as it is the default for GNU/Linux.
+
+   Further more, producing the image failed with `codepage 850` on `vfat` operations on the `overlay` diversions within `pi-gen`.
+
  * `REDUCED_FOOTPRINT` (Default: unset)
 
    If set to one, i.e. `REDUCED_FOOTPRINT=1`, 

@@ -3,6 +3,12 @@
 sdir=`dirname $(readlink -f "${BASH_SOURCE[0]}")`
 rootdir=`dirname $sdir`
 
+# codepage is hardcoded in 'loop_rootfs' and scripts, as well as required by pi-gen build
+if [ -z ${FAT_CODEPAGE+x} ]; then
+    readonly FAT_CODEPAGE="437"
+    export FAT_CODEPAGE
+fi
+
 # QCOW2 Routines
 
 export CURRENT_IMAGE
@@ -104,7 +110,7 @@ mount_qimage() {
     fi
 	mount -v -t ext4 $MAP_ROOT_DEV "$2"
 	mkdir -p "$2/boot"
-	mount -v -t vfat $MAP_BOOT_DEV "$2/boot"
+	mount -v -t ${BOOT_FSTYPE} $MAP_BOOT_DEV "$2/boot"
 	CURRENT_MOUNTPOINT="$2"
 }
 export -f mount_qimage
@@ -132,7 +138,7 @@ mount_rawimage() {
     fi
 	mount -v -t ext4 $MAP_ROOT_DEV "$2"
 	mkdir -p "$2/boot"
-	mount -v -t vfat $MAP_BOOT_DEV "$2/boot"
+	mount -v -t ${BOOT_FSTYPE} $MAP_BOOT_DEV "$2/boot"
 	CURRENT_MOUNTPOINT="$2"
 }
 export -f mount_rawimage
@@ -198,7 +204,25 @@ EOF
 				sync
 
 				kpartx -a /dev/${NBD_DEV}
-				mkfs.fat -n BOOT -F 32 -v $MAP_BOOT_DEV
+                case ${BOOT_FSTYPE} in
+                    xfs)
+                        mkfs.xfs -L BOOT $MAP_BOOT_DEV
+                        ;;
+                    ext4)
+                        mkfs.ext4 -L BOOT -O "^huge_file,^metadata_csum,^64bit" $MAP_BOOT_DEV
+                        ;;
+                    ext2)
+                        mkfs.ext2 -L BOOT -O "^has_journal,^huge_file,^metadata_csum,^64bit" $MAP_BOOT_DEV
+                        ;;
+                    vfat)
+                        mkfs.fat -n BOOT -F 32 --codepage=${FAT_CODEPAGE} -v $MAP_BOOT_DEV
+                        ;;
+                    *)
+                        echo "BOOT_FSTYPE not one of[xfs,ext4,ext2,vfat] but '${BOOT_FSTYPE}'. Exit."
+                        exit 1;
+                        ;;
+                esac
+                    
                 if [ "${ROOTFS_RO}" = "1" ] ; then
                     # Set reserved-blocks-percentage for root to zero, no journaling
                     mkfs.ext4 -L ROOTFS -m 0 -O "^has_journal,^huge_file,^metadata_csum,^64bit" $MAP_ROOT_DEV
@@ -222,7 +246,7 @@ EOF
 
 			mount -v -t ext4 $MAP_ROOT_DEV "${ROOTFS_DIR}"
 			mkdir -p "${ROOTFS_DIR}/boot"
-			mount -v -t vfat $MAP_BOOT_DEV "${ROOTFS_DIR}/boot"
+			mount -v -t ${BOOT_FSTYPE} $MAP_BOOT_DEV "${ROOTFS_DIR}/boot"
 			CURRENT_IMAGE=${WORK_DIR}/image-${STAGE}.qcow2
 			CURRENT_MOUNTPOINT=${ROOTFS_DIR}
 			popd > /dev/null
