@@ -2,6 +2,8 @@
 
 if [ "${ROOTFS_RO}" = "1" ] ; then
     install -v -m 644 files/fstab-rootfs_ro "${ROOTFS_DIR}/etc/fstab"
+else
+    install -v -m 644 files/fstab-rootfs_rw "${ROOTFS_DIR}/etc/fstab"
 fi
 install -m 644 files/overlay_mount.service          "${ROOTFS_DIR}/lib/systemd/system/"
 install -m 755 files/overlay_mount	                "${ROOTFS_DIR}/etc/init.d/"
@@ -54,6 +56,8 @@ on_chroot << EOF
         # without having a live mapping in /etc/fstab.
         systemctl disable systemd-remount-fs
         systemctl mask systemd-remount-fs
+    else
+        sed -i "s/vfat/${BOOT_FSTYPE}/g" /etc/fstab
     fi
 
     systemctl disable rsync

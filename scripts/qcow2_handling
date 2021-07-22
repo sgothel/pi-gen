@@ -394,7 +394,21 @@ function make_bootable_image() {
 		exit 1
 	fi
 
-    if false ; then
+    if [ "${ROOTFS_RO}" = "1" ] ; then
+        echo "Setup hard devicenames"
+        BOOT_DEV_NAME="\/dev\/mmcblk0p1"
+        echo "Boot: $BOOT_DEV_NAME"
+        ROOT_DEV_NAME="\/dev\/mmcblk0p2"
+        echo "Root1: $ROOT_DEV_NAME"
+        
+        echo "Set hard device names in fstab (rootfs ro -> /boot uncommented)"
+        sed -i "s/BOOTDEV/${BOOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
+        sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
+        if [ "${TARGET_RASPI}" = "1" ]; then
+            echo "Set rootfs ro hard device name in cmdline, required"
+            sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
+        fi
+    else
         echo "Setup PARTUUIDs"
         BOOT_PARTUUID="${IMGID}-01"
         echo "Boot: $BOOT_PARTUUID"
@@ -402,25 +416,12 @@ function make_bootable_image() {
         echo "Root1: $ROOT_PARTUUID"
 
         if [ ! -z "$BOOT_PARTUUID" ] && [ ! -z "$ROOT_PARTUUID" ]; then
-            echo "Set UUIDs to make it bootable"
+            echo "Set UUIDs to make it bootable, required."
             sed -i "s/BOOTDEV/PARTUUID=${BOOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
             sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
             if [ "${TARGET_RASPI}" = "1" ]; then
                 sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
             fi
-        fi
-    else
-        echo "Setup hard devicenames"
-        BOOT_DEV_NAME="\/dev\/mmcblk0p1"
-        echo "Boot: $BOOT_DEV_NAME"
-        ROOT_DEV_NAME="\/dev\/mmcblk0p2"
-        echo "Root1: $ROOT_DEV_NAME"
-        
-        echo "Set hard device names to make it bootable"
-        sed -i "s/BOOTDEV/${BOOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
-        sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
-        if [ "${TARGET_RASPI}" = "1" ]; then
-            sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
         fi
     fi
 
