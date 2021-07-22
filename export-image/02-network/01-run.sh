@@ -1,3 +1,6 @@
 #!/bin/bash -e
 
-install -m 644 files/resolv.conf "${ROOTFS_DIR}/etc/"
+# cleanup resolv.conf
+rm -f "${ROOTFS_DIR}/etc/resolv.conf"
+touch "${ROOTFS_DIR}/etc/resolv.conf"
+chmod 644 "${ROOTFS_DIR}/etc/resolv.conf"
