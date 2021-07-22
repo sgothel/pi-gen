@@ -8,6 +8,9 @@ fgrpname=$(/usr/bin/stat -c %G ${BASE_DIR}/build.sh)
 
 PRESERVE_ROOT="timestamps,mode,links"
 
+DEBIAN_FRONTEND=noninteractive
+APT_GET_INSTALL_OPTS='-o APT::Acquire::Retries=3 -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"'
+
 /bin/chown -R root:root ../files.etc
 /bin/chown -R 1000:1000 ../files.home
 /bin/chown -R root:root ../files.elevator
@@ -55,8 +58,6 @@ else
     /bin/rm -f                                           "${ROOTFS_DIR}/etc/grub.d/30_uefi-firmware"
     /bin/rm -f                                           "${ROOTFS_DIR}/etc/grub.d/20_memtest86"
     /bin/rm -f                                           "${ROOTFS_DIR}/etc/grub.d/20_memtest86+"
-
-    /bin/tar -C ${ROOTFS_DIR} -xzf ../files/rpd-plym-splash.tgz
 fi
 
 /bin/mkdir -p                                               "${ROOTFS_DIR}/boot/zafena/data"
@@ -68,11 +69,13 @@ fi
 echo $CUSTOM_VERSION                                     >  "${ROOTFS_DIR}/etc/zafena_version"
 echo $CUSTOM_VERSION                                     >  "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/zafena_version"
 
-on_chroot << EOF
-    plymouth-set-default-theme pix
-EOF
+/bin/tar -C ${ROOTFS_DIR} -xzf ../files/zafena-plym-splash.tgz
 
-/usr/bin/install -o 0 -g 0 -p ../files.home/pi/splash.png   "${ROOTFS_DIR}/usr/share/plymouth/themes/pix/"
+on_chroot << EOF
+    /usr/sbin/plymouth-set-default-theme zafena
+    echo "Set plymouth theme: "
+    /usr/sbin/plymouth-set-default-theme
+EOF
 
 if [ "${TARGET_RASPI}" != "1" ]; then
     # Enable console auto-login, like: 'SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_boot_behaviour B2'
@@ -94,7 +97,7 @@ sed -i "s/pi/${FIRST_USER_NAME}/g"                                           "${
 
 on_chroot << EOF
     dpkg -P nfs-common rpcbind rsync autofs
-    apt autoremove
+    apt-get ${APT_GET_INSTALL_OPTS} autoremove -y
 
     systemctl disable bluetooth
     systemctl mask bluetooth
@@ -135,19 +138,12 @@ on_chroot << EOF
 
     KVERSION=\$(ls /lib/modules/ | tail -n 1)
     if [ "${ROOTFS_RO}" = "1" ] ; then
-        # Rebuild `/data/sdcard` and initrd.img (flush stage2's produce)
+        # Rebuild /data/sdcard and initrd.img flush stage2 results
         rm -rf /data/sdcard
         rm -f /boot/sys_${TARGET_ARCH}_000/initrd.img
 
-        if [ "${TARGET_RASPI}" = "1" ]; then
-            echo "mkinitramfs for kernel version: \${KVERSION}"
-            /usr/sbin/mkinitramfs -o /boot/sys_${TARGET_ARCH}_000/initrd.img \${KVERSION}
-        else
-            update-initramfs -u -k \${KVERSION}
-            if [ -f "/boot/initrd.img-\${KVERSION}" ] ; then
-                mv -f "/boot/initrd.img-\${KVERSION}" /boot/sys_${TARGET_ARCH}_000/initrd.img
-            fi
-        fi
+        echo "mkinitramfs for kernel version: \${KVERSION}"
+        /usr/sbin/mkinitramfs -o /boot/sys_${TARGET_ARCH}_000/initrd.img \${KVERSION}
 
         mkdir -p                              /data/sdcard/zafena/data
         find  /boot/ -maxdepth 1 -type f \
@@ -163,7 +159,7 @@ on_chroot << EOF
         #fatattr +hs /boot/sys_${TARGET_ARCH}_000
     else
         if [ "${TARGET_RASPI}" != "1" ]; then
-            update-initramfs -u -k \${KVERSION}
+            update-initramfs -d -k \${KVERSION}
         fi
     fi
     if [ "${TARGET_RASPI}" != "1" ]; then
@@ -174,7 +170,7 @@ on_chroot << EOF
             grub-install --force-file-id --modules="gzio part_msdos fat ext2" /dev/${NBD_DEV}
         fi
 
-        # Remove storage device related 'search.fs_uuid' and allow multi homing
+        # Remove storage device related search.fs_uuid and allow multi homing
         rm -f /boot/grub/i386-pc/load.cfg
     fi
 EOF
