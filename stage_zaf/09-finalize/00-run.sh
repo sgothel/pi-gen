@@ -38,23 +38,25 @@ if [ "${TARGET_RASPI}" = "1" ]; then
     sed -i "s/sys_arm64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
 else
     if [ "${ROOTFS_RO}" = "1" ] ; then
-        install -m 644 files.boot/grub/custom-rootfs_ro.cfg  "${ROOTFS_DIR}/boot/grub/custom.cfg"
+        install -m 644 ../files.boot/grub/custom-rootfs_ro.cfg  "${ROOTFS_DIR}/boot/grub/custom.cfg"
     else
-        install -m 644 files.boot/grub/custom-rootfs_rw.cfg  "${ROOTFS_DIR}/boot/grub/custom.cfg"
+        install -m 644 ../files.boot/grub/custom-rootfs_rw.cfg  "${ROOTFS_DIR}/boot/grub/custom.cfg"
     fi
-    sed -i "s/sys_amd64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/grub/custom.cfg"
-    cp "${ROOTFS_DIR}/boot/grub/custom.cfg"              "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/"
+    /bin/sed -i "s/sys_amd64_000/sys_${TARGET_ARCH}_000/g"   "${ROOTFS_DIR}/boot/grub/custom.cfg"
+    /bin/cp "${ROOTFS_DIR}/boot/grub/custom.cfg"             "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/"
     # Done in stage2 only for 'ROOTFS_RO'
-    sed -i 's/GRUB_DEFAULT=.*$/GRUB_DEFAULT=loop_rootfs/g;s/GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=0/g;s/#GRUB_TERMINAL=.*$/GRUB_TERMINAL=console/g;s/#GRUB_DISABLE_LINUX_UUID=.*$/GRUB_DISABLE_LINUX_UUID=true/g'                    "${ROOTFS_DIR}/etc/default/grub"
+    /bin/sed -i 's/GRUB_DEFAULT=.*$/GRUB_DEFAULT=loop_rootfs/g;s/GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=0/g;s/#GRUB_TERMINAL=.*$/GRUB_TERMINAL=console/g;s/#GRUB_DISABLE_LINUX_UUID=.*$/GRUB_DISABLE_LINUX_UUID=true/g'               "${ROOTFS_DIR}/etc/default/grub"
     echo "GRUB_DISABLE_LINUX_PARTUUID=true"           >> "${ROOTFS_DIR}/etc/default/grub"
     echo "GRUB_DISABLE_RECOVERY=true"                 >> "${ROOTFS_DIR}/etc/default/grub"
-    rm -f                                                "${ROOTFS_DIR}/etc/grub.d/05_debian_theme"
-    rm -f                                                "${ROOTFS_DIR}/etc/grub.d/10_linux"
-    rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_linux_xen"
-    rm -f                                                "${ROOTFS_DIR}/etc/grub.d/30_os-prober"
-    rm -f                                                "${ROOTFS_DIR}/etc/grub.d/30_uefi-firmware"
-    rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_memtest86"
-    rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_memtest86+"
+    /bin/rm -f                                           "${ROOTFS_DIR}/etc/grub.d/05_debian_theme"
+    /bin/rm -f                                           "${ROOTFS_DIR}/etc/grub.d/10_linux"
+    /bin/rm -f                                           "${ROOTFS_DIR}/etc/grub.d/20_linux_xen"
+    /bin/rm -f                                           "${ROOTFS_DIR}/etc/grub.d/30_os-prober"
+    /bin/rm -f                                           "${ROOTFS_DIR}/etc/grub.d/30_uefi-firmware"
+    /bin/rm -f                                           "${ROOTFS_DIR}/etc/grub.d/20_memtest86"
+    /bin/rm -f                                           "${ROOTFS_DIR}/etc/grub.d/20_memtest86+"
+
+    /bin/tar -C ${ROOTFS_DIR} -xzf ../files/rpd-plym-splash.tgz
 fi
 
 /bin/mkdir -p                                               "${ROOTFS_DIR}/boot/zafena/data"
