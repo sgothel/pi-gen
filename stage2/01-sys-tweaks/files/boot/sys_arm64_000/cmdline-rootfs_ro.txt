@@ -1,1 +1,1 @@
-dwc_otg.lpm_enable=0 console=tty3 root=file elevator=deadline fsck.repair=no rootwait quiet
+dwc_otg.lpm_enable=0 console=tty3 root=file ro elevator=deadline fsck.repair=no loglevel=3 logo.nologo splash quiet plymouth.ignore-serial-consoles vt.global_cursor_default=0

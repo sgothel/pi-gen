@@ -21,12 +21,15 @@ if [ -z "${1}" -o -z "${2}" -o -z "${3}" -o -z "${4}" ]; then
 fi
 
 readonly grub_image="data/grub-i386-image01.bin"
+# codepage is hardcoded in 'loop_rootfs' and scripts, as well as required by pi-gen build
+readonly FAT_CODEPAGE="437"
 
 IMG_FILE="${1}"
 IMG_FILE_SIZE="${2}"
 MNT_DIR="${3}"
 SRC_DIR="${4}"
 
+rm -f ${IMG_FILE}
 dd if=/dev/zero of=${IMG_FILE} bs=4M count=${IMG_FILE_SIZE} conv=notrunc iflag=count_bytes,skip_bytes oflag=seek_bytes,dsync status=progress
 
 sfdisk ${IMG_FILE} << EOF
@@ -41,13 +44,13 @@ if [ -z "${nbd_dev}" ]; then
 fi
 
 p1dev="/dev/mapper/${nbd_dev}p1"
-mkfs.fat -n BOOT -F 32 -v ${p1dev}
+mkfs.fat -n BOOT -F 32 --codepage=${FAT_CODEPAGE} -v ${p1dev}
 sync
 
 ${sdir}/grubimg_to_blockdevice.sh "${grub_image}" "/dev/${nbd_dev}"
 
 mount ${p1dev} ${MNT_DIR}
-cp -a ${SRC_DIR}/* ${MNT_DIR}/
+cp -dR --preserve=mode,timestamps ${SRC_DIR}/* ${MNT_DIR}/
 sync
 umount ${MNT_DIR}
 sync
