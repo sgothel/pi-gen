@@ -4,7 +4,7 @@ echo "\n"
 # Change work directory
 cd /home/pi
 # load background
-xloadimage -onroot /home/pi/splash.png &
+xloadimage -fullscreen -onroot /home/pi/splash.png &
 # setup sound
 sudo amixer sset Master 100% 
 #sudo modprobe snd_pcm_oss
