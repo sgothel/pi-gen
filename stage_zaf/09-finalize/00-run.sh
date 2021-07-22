@@ -38,9 +38,9 @@ if [ "${TARGET_RASPI}" = "1" ]; then
     sed -i "s/sys_arm64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
 else
     if [ "${ROOTFS_RO}" = "1" ] ; then
-        install -m 644 ../files.boot/grub/custom-rootfs_ro.cfg  "${ROOTFS_DIR}/boot/grub/custom.cfg"
+        /usr/bin/install -m 644 ../files.boot/grub/custom-rootfs_ro.cfg  "${ROOTFS_DIR}/boot/grub/custom.cfg"
     else
-        install -m 644 ../files.boot/grub/custom-rootfs_rw.cfg  "${ROOTFS_DIR}/boot/grub/custom.cfg"
+        /usr/bin/install -m 644 ../files.boot/grub/custom-rootfs_rw.cfg  "${ROOTFS_DIR}/boot/grub/custom.cfg"
     fi
     /bin/sed -i "s/sys_amd64_000/sys_${TARGET_ARCH}_000/g"   "${ROOTFS_DIR}/boot/grub/custom.cfg"
     /bin/cp "${ROOTFS_DIR}/boot/grub/custom.cfg"             "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/"
@@ -73,6 +73,24 @@ on_chroot << EOF
 EOF
 
 /usr/bin/install -o 0 -g 0 -p ../files.home/pi/splash.png   "${ROOTFS_DIR}/usr/share/plymouth/themes/pix/"
+
+if [ "${TARGET_RASPI}" != "1" ]; then
+    # Enable console auto-login, like: 'SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_boot_behaviour B2'
+    on_chroot << EOF
+        systemctl set-default multi-user.target
+        ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service
+EOF
+    cat > ${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d/autologin.conf << EOF
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin ${FIRST_USER_NAME} --noclear %I \$TERM
+EOF
+
+    # Also allow user ${FIRST_USER_NAME} to 'sudo' w/o password
+    /usr/bin/install -o 0 -g 0 -p -m 440 ../files/sudoers_d-010_pi-nopasswd  "${ROOTFS_DIR}/etc/sudoers.d/010_pi-nopasswd"
+fi
+# Make sure to allow FIRST_USER_NAME to sudo w/o password, not fixed 'pi'
+sed -i "s/pi/${FIRST_USER_NAME}/g"                                           "${ROOTFS_DIR}/etc/sudoers.d/010_pi-nopasswd"
 
 on_chroot << EOF
     dpkg -P nfs-common rpcbind rsync autofs
