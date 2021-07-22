@@ -75,13 +75,8 @@ on_chroot << EOF
         systemctl disable ssh
         systemctl mask ssh
     fi
-    if [ "${ROOTFS_RO}" = "1" ] ; then
-        systemctl disable regenerate_ssh_host_keys
-        systemctl mask regenerate_ssh_host_keys
-    else
-        systemctl unmask regenerate_ssh_host_keys
-        systemctl enable regenerate_ssh_host_keys
-    fi
+    systemctl disable regenerate_ssh_host_keys
+    systemctl mask regenerate_ssh_host_keys
 
     if [ "${ROOTFS_RO}" = "1" ] ; then
         sed -i -e 's/^D \/tmp/#D \/tmp/g' /usr/lib/tmpfiles.d/tmp.conf
@@ -266,8 +261,4 @@ on_chroot <<EOF
         rm -f /boot/grub/i386-pc/load.cfg
     fi
 EOF
-
-if [ "${ROOTFS_RO}" != "1" ] ; then
-    rm -f "${ROOTFS_DIR}/etc/ssh/"ssh_host_*_key*
-fi
 
