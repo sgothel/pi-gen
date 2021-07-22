@@ -21,7 +21,11 @@ esac
 
 . /scripts/functions
 
-readonly BOOT_FSTYPE="vfat"
+# codepage is hardcoded in 'loop_rootfs' and scripts, as well as required by pi-gen build
+# Note: fsck.vfat '-c ${FAT_CODEPAGE}' leads to usage page despite being a valid argument, using 850 for fsck.vfat only.
+readonly FAT_CODEPAGE="437"
+readonly BOOT_FSTYPE=vfat
+readonly BOOT_FSOPTIONS=rw,noatime,fmask=0022,dmask=0022,codepage=${FAT_CODEPAGE},iocharset=ascii,shortname=mixed,errors=remount-ro
 readonly BOOT_DIR="/mnt/boot"
 
 readonly USES_RASPI_CONFIG=1
@@ -85,6 +89,10 @@ mylog_warning_msg() {
 	_mylog "Warning: %s\\n" "$*"
 }
 
+mylog_info_msg() {
+	_mylog "Info: %s\\n" "$*"
+}
+
 mylog_begin_msg() {
 	_mylog "Begin: %s ... " "$*"
 }
@@ -95,16 +103,17 @@ mylog_end_msg() {
 
 find_partition_base() {
     local fstype_exp="$1"
-    local mnt_dir="$2"
-    local file_exp="$3"
-    local blkparts=$(lsblk -l | grep part | cut -d" " -f1)
+    local mnt_opts="$2"
+    local mnt_dir="$3"
+    local file_exp="$4"
+    local blkparts=$(lsblk -l | grep part | cut -d" " -f1 | tr '\n' ' ')
     local part_dev=""
     if [ -z "${blkparts}" ]; then
         # May take some time on PC's after loading device modules (usb, ..)
         local blkpartwait=180
-        mylog_warning_msg "Waiting up to ${blkpartwait} seconds for block devices to become online ..."
+        mylog_info_msg "Waiting up to ${blkpartwait} seconds for block devices to become online ..."
         while [ "$(time_elapsed)" -lt "$blkpartwait" ]; do
-            blkparts=$(lsblk -l | grep part | cut -d" " -f1)
+            blkparts=$(lsblk -l | grep part | cut -d" " -f1 | tr '\n' ' ')
             if [ -n "${blkparts}" ]; then
                 break
             fi
@@ -122,15 +131,43 @@ find_partition_base() {
         if [ "${fs_type}" = "${fstype_exp}" ]; then
             part_dev="/dev/$i"
             # force fix verbose fseek, using undocumented options '-f', '-y'
-            if ! fsck -f -y -V -t ${fs_type} "${part_dev}" >&2 ; then
-                mylog_warning_msg "The ${fs_type} filesystem on ${part_dev} seems to require a manual fsck, continuing"
+            case ${fs_type} in
+                xfs)
+                    # a NOP
+                    mylog_info_msg "Running: fsck.xfs ${part_dev}"
+                    fsck.xfs ${part_dev} >&2
+                    ;;
+                ext4)
+                    mylog_info_msg "Running: fsck.ext4 -p ${part_dev}"
+                    fsck.ext4 -p ${part_dev} >&2
+                    ;;
+                ext2)
+                    mylog_info_msg "Running: fsck.ext2 -p ${part_dev}"
+                    fsck.ext2 -p ${part_dev} >&2
+                    ;;
+                vfat)
+                    # Note: fsck.vfat '-c ${FAT_CODEPAGE}' leads to usage page despite being a valid argument, using 850 for fsck.vfat only.
+                    # mylog_info_msg "Running: fsck.vfat -a -w -c ${FAT_CODEPAGE} ${part_dev}"
+                    # fsck.vfat -a -w -c ${FAT_CODEPAGE} ${part_dev} >&2
+                    mylog_info_msg "Running: fsck.vfat -a -w ${part_dev}"
+                    fsck.vfat -a -w ${part_dev} >&2
+                    ;;
+                *)
+                    mylog_info_msg "Running: fsck -f -y -t ${fs_type} ${part_dev}"
+                    fsck -f -y -t ${fs_type} ${part_dev} >&2
+                    ;;
+            esac
+            if [ $? -ne 0 ]; then
+                mylog_warning_msg "fsck ${fs_type}: Filesystem on ${part_dev} seems to require a manual fsck, continuing"
+            else
+                mylog_success_msg "fsck ${fs_type}: Filesystem on ${part_dev} OK"
             fi
-            if ! mount -t ${fs_type} ${part_dev} ${mnt_dir} >&2  ; then
-                mylog_warning_msg "Could not mount ${fs_type} from ${part_dev} on ${mnt_dir}, continuing."
+            if ! mount -t ${fs_type} -o ${mnt_opts} ${part_dev} ${mnt_dir} >&2  ; then
+                mylog_warning_msg "Could not mount ${fs_type} with '${mnt_opts}' from ${part_dev} on ${mnt_dir}, continuing."
                 part_dev=""
                 continue
             fi
-            mylog_success_msg "Mounted ${fs_type} from ${part_dev} on ${mnt_dir} ..."
+            mylog_success_msg "Mounted ${fs_type} with '${mnt_opts}' from ${part_dev} on ${mnt_dir} ..."
             if [ -f "${mnt_dir}/${file_exp}" ] ; then
                 mylog_success_msg "Found "${mnt_dir}/${file_exp}" on mounted ${fs_type} from ${part_dev}, done!"
                 break
@@ -145,13 +182,13 @@ find_partition_base() {
 }
 
 find_partition() {
-    local part_dev=$(find_partition_base "$1" "$2" "$3")
+    local part_dev=$(find_partition_base $*)
     if [ -z "${part_dev}" ]; then
         # May take some time on PC's after loading device modules (usb, ..)
         local blkpartwait=180
-        mylog_warning_msg "Retrying up to ${blkpartwait} seconds finding ${BOOT_FSTYPE} partition for ${BOOT_DIR} ..."
+        mylog_info_msg "Retrying up to ${blkpartwait} seconds finding ${BOOT_FSTYPE} partition for ${BOOT_DIR} ..."
         while [ "$(time_elapsed)" -lt "$blkpartwait" ]; do
-            part_dev=$(find_partition_base "$1" "$2" "$3")
+            part_dev=$(find_partition_base $*)
             if [ -n "${part_dev}" ]; then
                 break
             fi
@@ -177,11 +214,12 @@ check_fsfile() {
     fi
     mylog_success_msg "Image file ${fsfile} of type ${FILE_FSTYPE}."
 
-    if ! fsck -n -V -t "${FILE_FSTYPE}" "${fsfile}"; then
-        mylog_failure_msg "Image file ${fsfile} fsck failed."
+    mylog_info_msg "Running: fsck -f -y -t ${FILE_FSTYPE} ${fsfile}"
+    if ! fsck -f -y -t ${FILE_FSTYPE} ${fsfile} >&2 ; then
+        mylog_failure_msg "fsck ${FILE_FSTYPE}: Image file ${fsfile} fsck failed."
         return 1
     fi
-    mylog_success_msg "Image file ${fsfile} fsck OK."
+    mylog_success_msg "fsck ${fs_type}: Image file ${fsfile} OK"
 
     if [ "${FILE_FSTYPE}" = "squashfs" ]; then
         if ! unsquashfs -l "${fsfile}" > /dev/null ; then
@@ -297,20 +335,21 @@ fallback_rootfs() {
 
 tee_date() {
     ( while IFS= read -p -r line; do
-        printf '%s %s\n' "$(date -u +"%Y-%m-%d %H:%M:%S")" "$line"
+        printf '%s %s\n' "$(/usr/bin/date -u +"%Y-%m-%d %H:%M:%S")" "$line"
       done ) | tee -a $1
 }
 
 add_date() {
     ( while IFS= read -r line; do
-        printf '%s %s\n' "$(date -u +"%Y-%m-%d %H:%M:%S")" "$line"
+        printf '%s %s\n' "$(/usr/bin/date -u +"%Y-%m-%d %H:%M:%S")" "$line"
     done ) >> $1
 }
 
+LOOP_ROOTFS_LOG_PIDS=""
 mylog_begin_msg "loop_rootfs"
 
 mkdir -p ${BOOT_DIR}
-BOOT_PART=$(find_partition ${BOOT_FSTYPE} ${BOOT_DIR} "loop_rootfs.id")
+BOOT_PART=$(find_partition ${BOOT_FSTYPE} ${BOOT_FSOPTIONS} ${BOOT_DIR} "loop_rootfs.id")
 
 if [ "${ROOT}" != "file" ]; then
     mylog_success_msg "Skip loop for non file ROOT ${ROOT}"
@@ -336,6 +375,7 @@ if [ -f ${BOOT_DIR}/init_debug.log ]; then
 fi
 if [ -f /run/initramfs/initramfs.debug ]; then
     add_date ${BOOT_DIR}/init_debug.log < /run/initramfs/initramfs.debug &
+    LOOP_ROOTFS_LOG_PIDS="${LOOP_ROOTFS_LOG_PIDS} $!"
 fi
 
 quiet_orig="${quiet}"
@@ -360,6 +400,8 @@ else
     tee_date ${BOOT_DIR}/init_rootfs.log < "${FIFO_OUT}" &
     # tee_date ${BOOT_DIR}/init_rootfs.log < "${FIFO_ERR}" >&2 &
 fi
+LOOP_ROOTFS_LOG_PIDS="${LOOP_ROOTFS_LOG_PIDS} $!"
+
 exec >${FIFO_OUT} 2>&1
 
 if [ "${USES_RASPI_CONFIG}" = "1" ]; then
@@ -444,6 +486,9 @@ if ! attach_rootfs "${IMAGE_FILE}"; then
     fi
     exit 1
 fi
+
+LOOP_ROOTFS_LOG_PIDS=${LOOP_ROOTFS_LOG_PIDS##*( )}
+echo "LOOP_ROOTFS_LOG_PIDS=\"${LOOP_ROOTFS_LOG_PIDS}\"" >> /conf/param.conf
 
 mylog_success_msg "Attached ${OS_PREFIX}, ${ROOTFSTYPE} file ${IMAGE_FILE} to loop-device ${ROOT}."
 

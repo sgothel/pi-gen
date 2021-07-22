@@ -16,7 +16,19 @@ esac
 
 . /scripts/functions
 
+. /conf/param.conf
+
 readonly BOOT_DIR="/mnt/boot"
+
+# cleanup logging jobs
+if [ -n "${LOOP_ROOTFS_LOG_PIDS}" ]; then
+    for i in ${LOOP_ROOTFS_LOG_PIDS} ; do
+        if [ -d "/proc/${i}" ]; then
+            kill $i
+        fi
+    done
+fi
+echo "LOOP_ROOTFS_LOG_PIDS=\"\"" >> /conf/param.conf
 
 # move BOOT_DIR to the rootfs; fall back to util-linux mount that does
 # not understand -o move

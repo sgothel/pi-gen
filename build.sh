@@ -1,11 +1,12 @@
 #!/bin/bash -e
 
 export DEBIAN_FRONTEND=noninteractive
-export APT_GET_INSTALL_OPTS='-o APT::Acquire::Retries=3 -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"'
 
 # shellcheck disable=SC2119
 run_sub_stage()
 {
+    local APT_GET_INSTALL_OPTS='-o APT::Acquire::Retries=3 -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"'
+
     local packfile;
     local PACKAGES;
 	log "Begin ${SUB_STAGE_DIR}"
@@ -339,6 +340,14 @@ export BASE_QCOW2_SIZE=${BASE_QCOW2_SIZE:-15200M}
 source "${SCRIPT_DIR}/qcow2_handling"
 
 export ROOTFS_RO_OVERLAY_TMPFS_SIZE=${ROOTFS_RO_OVERLAY_TMPFS_SIZE:-128M}
+# vfat, ext2, ext4 or xfs
+export BOOT_FSTYPE=${BOOT_FSTYPE:-vfat}
+# codepage is hardcoded in 'loop_rootfs' and scripts, as well as required by pi-gen build
+if [ -z ${FAT_CODEPAGE+x} ]; then
+    readonly FAT_CODEPAGE="437"
+    export FAT_CODEPAGE
+fi
+export BOOT_FSOPTIONS=${BOOT_FSOPTIONS:-rw,noatime,fmask=0022,dmask=0022,codepage=${FAT_CODEPAGE},iocharset=ascii,shortname=mixed,errors=remount-ro}
 
 dependencies_check "${BASE_DIR}/depends"
 

@@ -1,9 +1,9 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          resize2fs_once
-# Required-Start:
+# Required-Start:    mountkernfs
 # Required-Stop:
-# Default-Start: 3
+# Default-Start:     S
 # Default-Stop:
 # Short-Description: Resize the root filesystem to fill partition
 # Description:

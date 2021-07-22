@@ -21,7 +21,7 @@ fi
 . /usr/share/initramfs-tools/scripts/functions
 . /usr/share/initramfs-tools/hook-functions
 
-fsck_types="ext4 squashfs vfat"
+fsck_types="xfs ext4 ext2 vfat"
 
 copy_exec /sbin/fsck
 copy_exec /sbin/logsave

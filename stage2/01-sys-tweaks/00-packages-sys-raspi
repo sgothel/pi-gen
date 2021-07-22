@@ -9,3 +9,7 @@ libpam-chksshpwd
 #python3 python3-rpi.gpio python3-gpiozero
 python-minimal python-rpi.gpio python-gpiozero
 fake-hwclock
+plymouth
+plymouth-label
+plymouth-themes
+rpd-plym-splash
