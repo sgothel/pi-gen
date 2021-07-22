@@ -2,6 +2,8 @@
 
 if [ "${ROOTFS_RO}" = "1" ] ; then
     install -v -m 644 files/fstab-rootfs_ro "${ROOTFS_DIR}/etc/fstab"
+else
+    install -v -m 644 files/fstab-rootfs_rw "${ROOTFS_DIR}/etc/fstab"
 fi
 install -m 644 files/overlay_mount.service          "${ROOTFS_DIR}/lib/systemd/system/"
 install -m 755 files/overlay_mount	                "${ROOTFS_DIR}/etc/init.d/"
@@ -13,7 +15,7 @@ install -m 755 files/rotatelog_init_rootfs	        "${ROOTFS_DIR}/etc/init.d/"
 install -m 644 files/resize2fs_once.service	        "${ROOTFS_DIR}/lib/systemd/system/"
 install -m 755 files/resize2fs_once	                "${ROOTFS_DIR}/etc/init.d/"
 
-install -d				"${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d"
+install -d				            "${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d"
 install -m 644 files/ttyoutput.conf	"${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d/"
 
 if [ "${TARGET_RASPI}" = "1" ]; then
@@ -54,6 +56,8 @@ on_chroot << EOF
         # without having a live mapping in /etc/fstab.
         systemctl disable systemd-remount-fs
         systemctl mask systemd-remount-fs
+    else
+        sed -i "s/vfat/${BOOT_FSTYPE}/g" /etc/fstab
     fi
 
     systemctl disable rsync
@@ -75,13 +79,8 @@ on_chroot << EOF
         systemctl disable ssh
         systemctl mask ssh
     fi
-    if [ "${ROOTFS_RO}" = "1" ] ; then
-        systemctl disable regenerate_ssh_host_keys
-        systemctl mask regenerate_ssh_host_keys
-    else
-        systemctl unmask regenerate_ssh_host_keys
-        systemctl enable regenerate_ssh_host_keys
-    fi
+    systemctl disable regenerate_ssh_host_keys
+    systemctl mask regenerate_ssh_host_keys
 
     if [ "${ROOTFS_RO}" = "1" ] ; then
         sed -i -e 's/^D \/tmp/#D \/tmp/g' /usr/lib/tmpfiles.d/tmp.conf
@@ -200,10 +199,13 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
     install -m 755 files/initramfs/fsck_custom 	"${ROOTFS_DIR}/etc/initramfs-tools/hooks/"
     install -m 755 files/initramfs/extra_execs  "${ROOTFS_DIR}/etc/initramfs-tools/hooks/"
 else
+    # Mutable rootfs
     if [ "${TARGET_RASPI}" = "1" ]; then
         install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/config.txt"
         install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
         install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_rw.txt  "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
+    else
+        sed -i 's/quiet//g'                                  "${ROOTFS_DIR}/etc/default/grub"
     fi
 fi
 
@@ -226,13 +228,7 @@ on_chroot <<EOF
 
     KVERSION=\$(ls /lib/modules/ | tail -n 1)
     if [ "${ROOTFS_RO}" = "1" ]; then
-        rm -f /boot/sys_${TARGET_ARCH}_000/initrd.img
-
-        if [ "${TARGET_RASPI}" = "1" ]; then
-            echo "mkinitramfs for kernel version: \${KVERSION}"
-            /usr/sbin/mkinitramfs -o /boot/sys_${TARGET_ARCH}_000/initrd.img \${KVERSION}
-        else
-            update-initramfs -u -k \${KVERSION}
+        if [ "${TARGET_RASPI}" != "1" ]; then
             if [ -f "/boot/vmlinuz-\${KVERSION}" ] ; then
                 mv -f "/boot/vmlinuz-\${KVERSION}" /boot/sys_${TARGET_ARCH}_000/vmlinuz
             fi
@@ -246,6 +242,10 @@ on_chroot <<EOF
                 mv -f "/boot/System.map-\${KVERSION}" /boot/sys_${TARGET_ARCH}_000/System.map
             fi
         fi
+        rm -f /boot/sys_${TARGET_ARCH}_000/initrd.img
+
+        echo "mkinitramfs for kernel version: \${KVERSION}"
+        /usr/sbin/mkinitramfs -o /boot/sys_${TARGET_ARCH}_000/initrd.img \${KVERSION}
 
         mkdir -p /data/sdcard
         find  /boot/ -maxdepth 1 -type f \
@@ -264,12 +264,8 @@ on_chroot <<EOF
             grub-install --force-file-id --modules="gzio part_msdos fat ext2" /dev/${NBD_DEV}
         fi
 
-        # Remove storage device related 'search.fs_uuid' and allow multi homing
+        # Remove storage device related search.fs_uuid and allow multi homing
         rm -f /boot/grub/i386-pc/load.cfg
     fi
 EOF
-
-if [ "${ROOTFS_RO}" != "1" ] ; then
-    rm -f "${ROOTFS_DIR}/etc/ssh/"ssh_host_*_key*
-fi
 

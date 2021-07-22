@@ -83,15 +83,13 @@ install -m 644 "${ROOTFS_DIR}/etc/rpi-issue" "${ROOTFS_DIR}/boot/issue.txt"
 
 cp "$ROOTFS_DIR/etc/rpi-issue" "$INFO_FILE"
 
-if [ "${ROOTFS_RO}" = "1" ] ; then
-    cp "$INFO_FILE" "$INFO_FILE_ROOT"
-    echo >> "$INFO_FILE_ROOT"
-    echo "+++" >> "$INFO_FILE_ROOT"
-    echo >> "$INFO_FILE_ROOT"
-    echo "Root Partition `basename $IMG_FILE_ROOT_EXT4`" >> "$INFO_FILE_ROOT"
-    echo "Root Partition of `basename $IMG_FILE`" >> "$INFO_FILE_ROOT"
-    echo >> "$INFO_FILE_ROOT"
-fi
+cp "$INFO_FILE" "$INFO_FILE_ROOT"
+echo >> "$INFO_FILE_ROOT"
+echo "+++" >> "$INFO_FILE_ROOT"
+echo >> "$INFO_FILE_ROOT"
+echo "Root Partition `basename $IMG_FILE_ROOT_EXT4`" >> "$INFO_FILE_ROOT"
+echo "Root Partition of `basename $IMG_FILE`" >> "$INFO_FILE_ROOT"
+echo >> "$INFO_FILE_ROOT"
 
 rm -rf "${DEPLOY_DIR2}"
 mkdir -p "${DEPLOY_DIR2}"
@@ -144,13 +142,16 @@ fi
 mv "$IMG_FILE" "$DEPLOY_DIR2/"
 
 if [ "${ROOTFS_RO}" = "1" ] ; then
-    ( cd "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}"; zip -r0 "../${IMG_FILENAME}${IMG_SUFFIX}.sdcard.zip" . )
+    # for now, not zipping the sdcard folder, as we further postprocess it
+    # ( cd "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}"; zip -r0 "../${IMG_FILENAME}${IMG_SUFFIX}.sdcard.zip" . )
 
-    mv "$IMG_FILE_ROOT_EXT4" "$DEPLOY_DIR2/"
-    #mv "$IMG_FILE_ROOT_SQFS_GZ" "$DEPLOY_DIR2/"
-    mv "$IMG_FILE_ROOT_SQFS_LZO" "$DEPLOY_DIR2/"
-    #mv "$IMG_FILE_ROOT_SQFS_ZSTD" "$DEPLOY_DIR2/"
+    echo "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX} done."
+
+    #mv -v "$IMG_FILE_ROOT_SQFS_GZ" "$DEPLOY_DIR2/"
+    mv -v "$IMG_FILE_ROOT_SQFS_LZO" "$DEPLOY_DIR2/"
+    #mv -v "$IMG_FILE_ROOT_SQFS_ZSTD" "$DEPLOY_DIR2/"
 fi
+mv -v "$IMG_FILE_ROOT_EXT4" "$DEPLOY_DIR2/"
 
 rm -f "${STAGE_WORK_DIR}/SHA256SUMS"
 ( cd "${DEPLOY_DIR2}"; find . -maxdepth 1 -type f -exec sha256sum -b \{\} >> "${STAGE_WORK_DIR}/SHA256SUMS" \; )
