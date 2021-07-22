@@ -1,0 +1,3 @@
+#!/bin/sh
+
+exec /usr/bin/X -logverbose 99 -logfile data/Xorg.log -background none -ac -nolisten tcp "$@" > data/system.log 2>&1 

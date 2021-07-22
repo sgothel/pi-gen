@@ -1,6 +1,12 @@
 if shopt -q login_shell; then
   if [[ ! ${DISPLAY} && ${XDG_VTNR} == 1 ]]; then
-    exec startx
+    cd /home/pi
+    rm -f .Xauthority
+    if [ ! -d data ] ; then
+        ln -s /boot/zafena/data .
+    fi
+    # exec startx
+    exec xinit /home/pi/.xinitrc -- /home/pi/.xserverrc :0 vt1 -keeptty > data/system.log 2>&1 
   fi
 fi
 

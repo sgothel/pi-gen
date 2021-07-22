@@ -17,23 +17,24 @@
 #ln -s /boot/var /var
 #mkdir -p /var/log
 
+# /usr/bin/chvt 1
+
+# /usr/bin/fbi -T 1 -noverbose -a /home/pi/splash.png
+
 fatattr +hs /boot/bootcode.bin
 fatattr +hs /boot/config.txt
 find /boot -maxdepth 1 -name \*.dat -exec fatattr +hs \{\} \;
 find /boot -maxdepth 1 -name \*.elf -exec fatattr +hs \{\} \;
 fatattr +hs /boot/sys_arm64_000
+fatattr +hs /boot/loop_rootfs.id
 
-python /home/pi/.off_button.py & 
-
-#/usr/bin/fbi -T 1 -noverbose -a /home/pi/splash.png
+/usr/bin/python3 /home/pi/.off_button.py >/dev/null 2>&1 & 
 
 # Print the IP address
-_IP=$(hostname -I) || true
-if [ "$_IP" ]; then
-  printf "My IP address is %s\n" "$_IP"
-fi
-
-/usr/bin/chvt 1
+# _IP=$(hostname -I) || true
+# if [ "$_IP" ]; then
+#   printf "My IP address is %s\n" "$_IP"
+# fi
 
 #rm /var/log/daemon.*
 #rm /var/log/syslo*
