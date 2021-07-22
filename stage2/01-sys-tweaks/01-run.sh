@@ -226,13 +226,7 @@ on_chroot <<EOF
 
     KVERSION=\$(ls /lib/modules/ | tail -n 1)
     if [ "${ROOTFS_RO}" = "1" ]; then
-        rm -f /boot/sys_${TARGET_ARCH}_000/initrd.img
-
-        if [ "${TARGET_RASPI}" = "1" ]; then
-            echo "mkinitramfs for kernel version: \${KVERSION}"
-            /usr/sbin/mkinitramfs -o /boot/sys_${TARGET_ARCH}_000/initrd.img \${KVERSION}
-        else
-            update-initramfs -u -k \${KVERSION}
+        if [ "${TARGET_RASPI}" != "1" ]; then
             if [ -f "/boot/vmlinuz-\${KVERSION}" ] ; then
                 mv -f "/boot/vmlinuz-\${KVERSION}" /boot/sys_${TARGET_ARCH}_000/vmlinuz
             fi
@@ -246,6 +240,10 @@ on_chroot <<EOF
                 mv -f "/boot/System.map-\${KVERSION}" /boot/sys_${TARGET_ARCH}_000/System.map
             fi
         fi
+        rm -f /boot/sys_${TARGET_ARCH}_000/initrd.img
+
+        echo "mkinitramfs for kernel version: \${KVERSION}"
+        /usr/sbin/mkinitramfs -o /boot/sys_${TARGET_ARCH}_000/initrd.img \${KVERSION}
 
         mkdir -p /data/sdcard
         find  /boot/ -maxdepth 1 -type f \
@@ -264,7 +262,7 @@ on_chroot <<EOF
             grub-install --force-file-id --modules="gzio part_msdos fat ext2" /dev/${NBD_DEV}
         fi
 
-        # Remove storage device related 'search.fs_uuid' and allow multi homing
+        # Remove storage device related search.fs_uuid and allow multi homing
         rm -f /boot/grub/i386-pc/load.cfg
     fi
 EOF
