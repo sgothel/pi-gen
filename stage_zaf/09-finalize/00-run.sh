@@ -159,7 +159,7 @@ on_chroot << EOF
         #fatattr +hs /boot/sys_${TARGET_ARCH}_000
     else
         if [ "${TARGET_RASPI}" != "1" ]; then
-            update-initramfs -d -k \${KVERSION}
+            update-initramfs -u -k \${KVERSION}
         fi
     fi
     if [ "${TARGET_RASPI}" != "1" ]; then
