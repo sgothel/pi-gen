@@ -15,7 +15,7 @@ install -m 755 files/rotatelog_init_rootfs	        "${ROOTFS_DIR}/etc/init.d/"
 install -m 644 files/resize2fs_once.service	        "${ROOTFS_DIR}/lib/systemd/system/"
 install -m 755 files/resize2fs_once	                "${ROOTFS_DIR}/etc/init.d/"
 
-install -d				"${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d"
+install -d				            "${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d"
 install -m 644 files/ttyoutput.conf	"${ROOTFS_DIR}/etc/systemd/system/rc-local.service.d/"
 
 if [ "${TARGET_RASPI}" = "1" ]; then
@@ -199,10 +199,13 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
     install -m 755 files/initramfs/fsck_custom 	"${ROOTFS_DIR}/etc/initramfs-tools/hooks/"
     install -m 755 files/initramfs/extra_execs  "${ROOTFS_DIR}/etc/initramfs-tools/hooks/"
 else
+    # Mutable rootfs
     if [ "${TARGET_RASPI}" = "1" ]; then
         install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/config.txt"
         install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
         install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_rw.txt  "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
+    else
+        sed -i 's/quiet//g'                                  "${ROOTFS_DIR}/etc/default/grub"
     fi
 fi
 
