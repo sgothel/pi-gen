@@ -8,25 +8,22 @@ fgrpname=$(/usr/bin/stat -c %G ${BASE_DIR}/build.sh)
 
 PRESERVE_ROOT="timestamps,mode,links"
 
-chown -R root:root ../files.etc
-chown -R 1000:1000 ../files.home
-chown -R root:root ../files.elevator
+/bin/chown -R root:root ../files.etc
+/bin/chown -R 1000:1000 ../files.home
+/bin/chown -R root:root ../files.elevator
 
 /bin/cp -dR --preserve=$PRESERVE_ROOT ../files.etc/*        "${ROOTFS_DIR}/etc/"
 /bin/cp -dR --preserve=$PRESERVE_ROOT ../files.home/*       "${ROOTFS_DIR}/home/"
 /bin/cp -dR --preserve=$PRESERVE_ROOT ../files.elevator/*   "${ROOTFS_DIR}/"
 
-/bin/cp -dR --preserve=timestamps     ../files.boot/*       "${ROOTFS_DIR}/boot/"
+/bin/cp -d --preserve=timestamps ../files.boot/config.xml         "${ROOTFS_DIR}/boot/"
+/bin/cp -d --preserve=timestamps ../files.boot/config-example.xml "${ROOTFS_DIR}/boot/"
+/bin/cp -dR --preserve=timestamps ../files.boot/grub              "${ROOTFS_DIR}/boot/"
+/bin/cp -dR --preserve=timestamps ../files.boot/zafena            "${ROOTFS_DIR}/boot/"
 
 if [ "${TARGET_RASPI}" = "1" ]; then
-    if [ "sys_arm64_000" != "${TARGET_ARCH}" ]; then
-        /bin/mv -f "${ROOTFS_DIR}/boot/sys_arm64_000" "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000"
-    fi
-
-    /bin/rm -f "${ROOTFS_DIR}/boot/config-rootfs_ro.txt"
-    /bin/rm -f "${ROOTFS_DIR}/boot/config-rootfs_rw.txt"
-    /bin/rm -f "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/cmdline-rootfs_ro.txt"
-    /bin/rm -f "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/cmdline-rootfs_rw.txt"
+    /bin/mkdir -p                                                           "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000"
+    /bin/cp -dR --preserve=timestamps ../files.boot/sys_arm64_000/overlays  "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/"
 
     if [ "${ROOTFS_RO}" = "1" ] ; then
         /bin/cp -d  --preserve=timestamps  ../files.boot/config-rootfs_ro.txt "${ROOTFS_DIR}/boot/config.txt"
@@ -60,11 +57,11 @@ else
     rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_memtest86+"
 fi
 
-mkdir -p                                                    "${ROOTFS_DIR}/boot/zafena/data"
+/bin/mkdir -p                                               "${ROOTFS_DIR}/boot/zafena/data"
 
 /bin/cp -dR --preserve=timestamps     ../files.zafena_app/* "${ROOTFS_DIR}/boot/zafena/"
 
-cat ../files.home/pi/.bashrc_startx                      >> "${ROOTFS_DIR}/home/pi/.bashrc"
+/bin/cat ../files.home/pi/.bashrc_startx                 >> "${ROOTFS_DIR}/home/pi/.bashrc"
 
 echo $CUSTOM_VERSION                                     >  "${ROOTFS_DIR}/etc/zafena_version"
 echo $CUSTOM_VERSION                                     >  "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/zafena_version"
@@ -162,7 +159,7 @@ on_chroot << EOF
     fi
 EOF
 
-chown -R ${fusrname}:${fgrpname} ../files.etc
-chown -R ${fusrname}:${fgrpname} ../files.home
-chown -R ${fusrname}:${fgrpname} ../files.elevator
+/bin/chown -R ${fusrname}:${fgrpname} ../files.etc
+/bin/chown -R ${fusrname}:${fgrpname} ../files.home
+/bin/chown -R ${fusrname}:${fgrpname} ../files.elevator
 
