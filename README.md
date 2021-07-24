@@ -5,10 +5,20 @@ Tool used to create Debian and Raspberry Pi derived OS images.
 
 ## Dependencies
 
-pi-gen runs on Debian-based operating systems. Currently it is only supported on
-either Debian Buster or Debian Bullseye and is known to have issues building on
-earlier releases of these systems. On other Linux distributions it may be possible
-to use the Docker build described below.
+pi-gen has been tested and runs on Debian 11 `Bullseye` 
+to produce OS images for Raspberry-arm64 and PC-amd64 machines
+based on Debian 10 `Buster` and Debian 11 `Bullseye`. 
+
+Raspberry-armhf and PC-i386 is also supported, however, 
+I have not tested these targets anymore.
+
+Related config variables are 
+* `TARGET_RASPI`
+* `TARGET_ARCH`
+* `RELEASE`
+
+It might be possible to use Docker on other Linux distributions as described below,
+however, I have not tested this procedure.
 
 To install the required dependencies for `pi-gen` you should run:
 
@@ -67,26 +77,28 @@ The following environment variables are supported:
    If set to `0` (or other than `1`), the `Raspbian` `apt` source 
    and its packages are **not** being used, i.e. ending up with a vanilla `Debian` installation.
 
-   Further `Raspberry` specific tasks are not performed:
+   Further `Raspberry` specific tasks are **not** performed:
+
      * /boot/config.txt
-     * /boot/*/cmdline.txt
+     * /boot/.../cmdline.txt
      * /boot/ any specific `Raspberry` bootloader
    
-   instead, the default tasks are being used:
+   **instead**, the default tasks are being used with `TARGET_RASPI=0`:
+
      * Install GRUB using `timeout 0` for no visible menu.
 
  * `TARGET_ARCH` (Default: `arm64`)
 
    Maybe set to any valid and supported architecture, which are 
-     * arm64
-     * armhf
-     * i386
-     * amd64
+
+     - arm64
+     - armhf
+     - i386
+     - amd64
 
 * `RELEASE` (Default: `buster`)
 
-   The release version to build images against. Valid values are `jessie`, `stretch`,
-   `buster` and `bullseye`.
+   The release version to build images against. Valid values are `buster` and `bullseye`.
 
  * `INSTALL_RECOMMENDS` (Default: unset)
 
