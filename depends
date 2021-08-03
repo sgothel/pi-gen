@@ -19,5 +19,5 @@ lsmod:kmod
 bc
 qemu-nbd:qemu-utils
 kpartx
-squashfs-tools
+mksquashfs:squashfs-tools
 fatattr
