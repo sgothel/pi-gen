@@ -6,11 +6,10 @@ Tool used to create Debian and Raspberry Pi derived OS images.
 ## Dependencies
 
 pi-gen has been tested and runs on Debian 11 `Bullseye` 
-to produce OS images for Raspberry-arm64 and PC-amd64 machines
+to produce OS images for Raspi-arm64, Raspi-armhf and PC-amd64 machines
 based on Debian 10 `Buster` and Debian 11 `Bullseye`. 
 
-Raspberry-armhf and PC-i386 is also supported, however, 
-I have not tested these targets anymore.
+PC-i386 is also supported, however, it has not been tested lately.
 
 Related config variables are 
 * `TARGET_RASPI`
