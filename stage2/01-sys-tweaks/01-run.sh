@@ -204,6 +204,8 @@ else
         install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/config.txt"
         install -m 644 files/boot/config-rootfs_rw.txt 	     "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
         install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_rw.txt  "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
+        sed -i "s/sys_arm64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/config.txt"
+        sed -i "s/sys_arm64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
     else
         sed -i 's/quiet//g'                                  "${ROOTFS_DIR}/etc/default/grub"
     fi
