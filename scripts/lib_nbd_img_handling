@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# set -x
+
 #
 # NBD and Image stateless reusable functions
 #
@@ -222,16 +224,13 @@ lib_find_nbd() {
 # Input {1}: mountpoint
 # Input {2}: nbd device basename
 lib_umount_image2() {
-    if [ -z "${1}" ] ; then
+    local mnt_dir=${1}
+    local nbd_dev=${2}
+
+    if [ -z "${mnt_dir}" ] ; then
         lib_echo_err "lib_umount_image2: mountpoint not given. Exit."
         exit 1;
     fi
-    if [ -z "${2}" ] ; then
-        lib_echo_err "lib_umount_image2: nbd device basename not given. Exit."
-        exit 1;
-    fi
-    local mnt_dir=${1}
-    local nbd_dev=${2}
 
 	sync
 	while mount | grep -q "${mnt_dir}"; do
@@ -243,6 +242,10 @@ lib_umount_image2() {
 			done
 		done
 	done
+    if [ -z "${nbd_dev}" ] ; then
+        lib_echo_err "lib_umount_image2: nbd device basename not given. Exit."
+        exit 1;
+    fi
     lib_disconnect_blkdev "${nbd_dev}"
 }
 export -f lib_umount_image2
@@ -257,8 +260,7 @@ lib_umount_image1() {
     local mnt_dir=${1}
     local nbd_dev=$(lib_find_nbd "${mnt_dir}")
     if [ -z "${nbd_dev}" ] ; then
-        lib_echo_err "lib_umount_image: nbd device basename not found via mountpoint ${mnt_dir}. Exit."
-        exit 1;
+        lib_echo_err "lib_umount_image: nbd device basename not found via mountpoint ${mnt_dir}. Continuing."
     fi
     lib_umount_image2 "${mnt_dir}" "${nbd_dev}"
 }
