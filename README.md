@@ -30,6 +30,17 @@ qemu-utils kpartx squashfs-tools fatattr
 The file `depends` contains a list of tools needed.  The format of this
 package is `<tool>[:<debian-package>]`.
 
+### Package Source
+For target Raspi-armhf (arm32) the scripts utilize `raspberrypi.org` 
+as the main source for `debootstrap` and `apt` package management.
+
+It has been observed using `debian.org` as the source for target Raspi-armhf 
+may lead to an instable installation, despite successful completion. 
+Network disconnect was one observation.
+
+For all other targets, e.g. Raspi-arm64 and PC-amd64, the scripts utilize `debian.org`
+as the main source for `debootstrap` and `apt` package management.
+
 
 ## Notes
 
