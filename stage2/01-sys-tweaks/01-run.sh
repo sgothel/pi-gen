@@ -172,6 +172,10 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
         install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_ro.txt  "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
         sed -i "s/sys_arm64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/config.txt"
         sed -i "s/sys_arm64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
+        if [ "${TARGET_ARCH}" = "armhf" ]; then
+            sed -i "s/arm_64bit=1/# arm_64bit=1/g"           "${ROOTFS_DIR}/boot/config.txt"
+            sed -i "s/arm_64bit=1/# arm_64bit=1/g"           "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
+        fi
     else
         install -m 644 files/grub/custom-rootfs_ro.cfg       "${ROOTFS_DIR}/boot/grub/custom.cfg"
         sed -i "s/sys_amd64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/grub/custom.cfg"
@@ -206,6 +210,10 @@ else
         install -m 644 files/boot/sys_arm64_000/cmdline-rootfs_rw.txt  "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
         sed -i "s/sys_arm64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/config.txt"
         sed -i "s/sys_arm64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
+        if [ "${TARGET_ARCH}" = "armhf" ]; then
+            sed -i "s/arm_64bit=1/# arm_64bit=1/g"               "${ROOTFS_DIR}/boot/config.txt"
+            sed -i "s/arm_64bit=1/# arm_64bit=1/g"               "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
+        fi
     else
         sed -i 's/quiet//g'                                  "${ROOTFS_DIR}/etc/default/grub"
     fi
