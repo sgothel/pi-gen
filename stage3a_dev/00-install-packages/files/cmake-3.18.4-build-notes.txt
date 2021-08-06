@@ -1,0 +1,24 @@
+Debian (Failed):
+
+dpkg -P extra-cmake-modules cmake-extras cmake cmake-data
+
+dpkg-checkbuilddeps
+
+new: libarchive-dev (>= 3.3.3) libjsoncpp-dev librhash-dev libuv1-dev (>= 1.10) python3-sphinx python3-sphinxcontrib.qthelp | python3-sphinx
+sudo apt-get install libarchive-dev libjsoncpp-dev librhash-dev libuv1-dev python3-sphinx python3-sphinx python3-sphinxcontrib.qthelp libssl-dev
+
+dpkg-buildpackage -rfakeroot -b -uc
+
++++
+
+Vanilla:
+
+dpkg -P extra-cmake-modules cmake-extras cmake cmake-data
+
+cd CMake-3.18.4
+
+./bootstrap -- -DCMAKE_USE_OPENSSL=OFF
+make
+sudo make install
+
+tar caf projects/cmake-3.18.4-deb10_armhf.tar.xz bin doc/cmake-3.18 share/cmake-3.18
