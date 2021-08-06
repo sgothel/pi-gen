@@ -7,7 +7,8 @@ nasm yasm
 libunwind8 libunwind-dev
 libglib2.0 libglib2.0-0 libglib2.0-dev
 openjdk-11-jdk openjdk-11-jre junit4 openjfx ant
-cmake cmake-extras extra-cmake-modules pkg-config
+# cmake-data cmake cmake-extras extra-cmake-modules pkg-config
+cmake-data cmake pkg-config
 ninja-build meson python3-mako flex bison zypper
 libcurl4 libcurl4-gnutls-dev mini-httpd curl wget ksh
 p7zip-full gawk

@@ -328,6 +328,13 @@ if [ -z "${IS_TESTING}" ]; then
 fi
 export IS_TESTING
 
+if [ "${PREFER_RASPI_SOURCE}" = "1" -a "${TARGET_RASPI}" = "1" -a "${TARGET_ARCH}" = "armhf" ]; then
+    USE_RASPI_SOURCE=1
+else
+    USE_RASPI_SOURCE=0
+fi
+export USE_RASPI_SOURCE
+
 # shellcheck source=scripts/common
 source "${SCRIPT_DIR}/common"
 # shellcheck source=scripts/dependencies_check

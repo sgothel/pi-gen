@@ -18,7 +18,7 @@ bootstrap(){
 	BOOTSTRAP_ARGS+=(--arch ${TARGET_ARCH})
 	BOOTSTRAP_ARGS+=(--include gnupg)
 	BOOTSTRAP_ARGS+=(--components "main,contrib,non-free")
-	if [ "${TARGET_RASPI}" = "1" -a "${TARGET_ARCH}" = "armhf" ]; then
+	if [ "${USE_RASPI_SOURCE}" = "1" ]; then
 		BOOTSTRAP_ARGS+=(--keyring "${STAGE_DIR}/files/raspberrypi.gpg")
 	fi
 	BOOTSTRAP_ARGS+=("$@")

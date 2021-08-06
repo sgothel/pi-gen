@@ -31,16 +31,11 @@ The file `depends` contains a list of tools needed.  The format of this
 package is `<tool>[:<debian-package>]`.
 
 ### Package Source
-For target Raspi-armhf (arm32) the scripts utilize `raspberrypi.org` 
-as the main source for `debootstrap` and `apt` package management.
+For all targets, default source for `debootstrap` and `apt` package management
+is `debian.org`.
 
-It has been observed using `debian.org` as the source for target Raspi-armhf 
-may lead to an instable installation, despite successful completion. 
-Network disconnect was one observation.
-
-For all other targets, e.g. Raspi-arm64 and PC-amd64, the scripts utilize `debian.org`
-as the main source for `debootstrap` and `apt` package management.
-
+See `PREFER_RASPI_SOURCE` below, describing how to use `raspberrypi.org`
+as the package source.
 
 ## Notes
 
@@ -106,9 +101,16 @@ The following environment variables are supported:
      - i386
      - amd64
 
-* `RELEASE` (Default: `buster`)
+ * `RELEASE` (Default: `buster`)
 
    The release version to build images against. Valid values are `buster` and `bullseye`.
+
+ * `PREFER_RASPI_SOURCE` (Default: unset)
+
+   If set to '1' and `TARGET_RASPI=1` and `TARGET_ARCH=armhf`,
+   `raspberrypi.org` will be used as the main source `debootstrap` and `apt` package management.
+
+   Default is to use `debian.org` as the main package source for all targets.
 
  * `INSTALL_RECOMMENDS` (Default: unset)
 

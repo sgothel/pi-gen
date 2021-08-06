@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-if [ "${TARGET_RASPI}" = "1" -a "${TARGET_ARCH}" = "armhf" ]; then
+if [ "${USE_RASPI_SOURCE}" = "1" ]; then
     install -m 644 files/sources-raspi_armhf.list "${ROOTFS_DIR}/etc/apt/sources.list"
 elif [ "${IS_TESTING}" = "1" ]; then
     install -m 644 files/sources-testing.list "${ROOTFS_DIR}/etc/apt/sources.list"
