@@ -321,6 +321,8 @@ if [ -z "${IS_TESTING}" ]; then
         "buster")
             IS_TESTING=0 ;;
         "bullseye")
+            IS_TESTING=0 ;;
+        "bookworm")
             IS_TESTING=1 ;;
         *)
             IS_TESTING=1 ;;
