@@ -8,4 +8,6 @@ SKIP_IMAGES
 *-pc
 apt-cacher-ng/
 stage_zaf/files.excluded/
-test/*
+/test/
+/test2/
+/sven/
