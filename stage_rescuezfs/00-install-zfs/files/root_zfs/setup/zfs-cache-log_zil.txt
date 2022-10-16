@@ -1,0 +1,29 @@
+
+Device                                                                  Boot      Start        End    Sectors  Size Id Type
+/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_SERIALNO-part1            2048 1279264767 1279262720  610G 83 Linux
+/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_SERIALNO-part2      1279264768 1547700223  268435456  128G 82 Linux swap / Solaris
+/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_SERIALNO-part3      1547700224 1816135679  268435456  128G bf Solaris   CACHE / L2ARC
+/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_SERIALNO-part4      1816135680 1953525167  137389488 65.5G bf Solaris   LOG / ZIL
+
+<---
+
+https://www.mail-archive.com/zfs-discuss@opensolaris.org/msg34674.html
+
+Approximately 200 bytes per record. I use the following example:
+        Suppose we use a Seagate LP 2 TByte disk for the L2ARC
+                + Disk has 3,907,029,168 512 byte sectors, guaranteed
+                + Workload uses 8 kByte fixed record size
+        RAM needed for arc_buf_hdr entries
+        + Need = ~(3,907,029,168 - 9,232) * 200 / 16 = ~48 GBytes
+-->
+
+( 268435456 - 9,232) * 200 / 16 = ~3.4 GBytes
+
+zpool add risa cache /dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_SERIALNO-part3
+zpool add risa log /dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_SERIALNO-part4
+
+        logs
+          nvme-Samsung_SSD_970_EVO_Plus_1TB_SERIALNO-part4  ONLINE       0     0     0
+        cache
+          nvme-eui.002538510140b872-part3                          ONLINE       0     0     0
+
