@@ -1,8 +1,0 @@
-Package: zfs-zed zfsutils-linux libzfs2linux libzpool2linux libuutil1linux libnvpair1linux spl spl-dkms
-Pin: version *
-Pin-Priority: -1
-
-Package: libzfs2-devel zfs-initramfs zfs zfs-dkms libzfs2 libzfs4 libzpool2 libzpool4 libuutil1 libuutil3 libnvpair1 libnvpair3 zfs-dracut zfs-test
-Pin: version *
-Pin-Priority: -1
-

@@ -1,0 +1,43 @@
+# Features which are supported by grub2 (zfs 2.1.6)
+async_destroy
+bookmarks
+embedded_data
+empty_bpobj
+enabled_txg
+extensible_dataset
+filesystem_limits
+hole_birth
+large_blocks
+lz4_compress
+spacemap_histogram
+#
+# (Additional) Read-Only Features which are also supported by grub2 (zfs 2.1.6)
+allocation_classes
+# class_of_storage
+device_rebuild
+livelist
+log_spacemap
+# meta_devices
+obsolete_counts
+project_quota
+resilver_defer
+spacemap_v2
+userobj_accounting
+# vdev_properties
+# zilsaxattr
+zpool_checkpoint
+#
+# Extra sneakend in at zfs ceate (zfs 2.1.6)
+device_removal
+# Extra on risa enabled (inactive) w/ grub2 (zfs 2.1.6)
+bookmark_v2
+bookmark_written
+edonr
+encryption
+large_dnode
+multi_vdev_crash_dump
+redacted_datasets
+redaction_bookmarks
+sha512
+skein
+zstd_compress
