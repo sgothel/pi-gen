@@ -1,0 +1,15 @@
+#libraspberrypi-dev libraspberrypi-doc
+libraspberrypi-dev 
+raspberrypi-sys-mods
+pi-bluetooth
+raspinfo
+rpi-update
+rpi-eeprom
+libpam-chksshpwd
+python3-minimal python3-rpi.gpio python3-gpiozero
+#python-minimal python-rpi.gpio python-gpiozero
+fake-hwclock
+plymouth
+plymouth-label
+plymouth-themes
+rpd-plym-splash
