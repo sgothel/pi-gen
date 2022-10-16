@@ -246,7 +246,8 @@ on_chroot <<EOF
                 mv -f "/boot/initrd.img-\${KVERSION}" /boot/sys_${TARGET_ARCH}_000/initrd.img
             fi
             if [ -f "/boot/config-\${KVERSION}" ] ; then
-                mv -f "/boot/config-\${KVERSION}" /boot/sys_${TARGET_ARCH}_000/config
+                # keep copy in location as required by mkinitramfs (debian 12)
+                cp -a "/boot/config-\${KVERSION}" /boot/sys_${TARGET_ARCH}_000/config
             fi
             if [ -f "/boot/System.map-\${KVERSION}" ] ; then
                 mv -f "/boot/System.map-\${KVERSION}" /boot/sys_${TARGET_ARCH}_000/System.map
