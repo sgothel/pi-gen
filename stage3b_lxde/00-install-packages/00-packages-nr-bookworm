@@ -1,0 +1,5 @@
+mousepad
+lxde lxtask menu-xdg
+zenity xdg-utils
+gvfs-backends gvfs-fuse
+lightdm gnome-icon-theme

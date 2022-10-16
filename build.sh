@@ -245,7 +245,7 @@ term() {
 trap term EXIT INT TERM
 
 export PI_GEN=${PI_GEN:-pi-gen}
-export PI_GEN_REPO=${PI_GEN_REPO:-https://github.com/RPi-Distro/pi-gen}
+export PI_GEN_REPO=${PI_GEN_REPO:-https://jausoft.com/cgit/pi-gen.git/about/}
 
 if [ -z "${IMG_NAME}" ]; then
 	echo "IMG_NAME not set" 1>&2
@@ -310,6 +310,10 @@ export QUILT_PATCHES
 export QUILT_NO_DIFF_INDEX=1
 export QUILT_NO_DIFF_TIMESTAMPS=1
 export QUILT_REFRESH_ARGS="-p ab"
+
+if [ -z "${DEB_SERVER}" ]; then
+    export DEB_SERVER="http://deb.debian.org/debian"
+fi
 
 if [ -z "${IS_TESTING}" ]; then
     IS_TESTING=
