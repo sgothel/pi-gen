@@ -7,7 +7,7 @@ elif [ "${IS_TESTING}" = "1" ]; then
 else
     install -m 644 files/sources-stable.list "${ROOTFS_DIR}/etc/apt/sources.list"
 fi
-sed -i "s/RELEASE/${RELEASE}/g" "${ROOTFS_DIR}/etc/apt/sources.list"
+sed -i -e "s@RELEASE@${RELEASE}@g" -e "s@DEB_SERVER@${DEB_SERVER}@g" "${ROOTFS_DIR}/etc/apt/sources.list"
 
 if [ "${TARGET_RASPI}" = "1" ]; then
     install -m 644 files/raspi.list "${ROOTFS_DIR}/etc/apt/sources.list.d/"
