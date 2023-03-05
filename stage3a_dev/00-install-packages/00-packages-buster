@@ -1,0 +1,2 @@
+openjdk-11-jdk openjdk-11-jdk-headless junit4 ant
+libavcodec-dev libavformat-dev libavdevice-dev libavutil-dev libswresample-dev
