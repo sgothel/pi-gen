@@ -1,0 +1,2 @@
+openjdk-17-jdk openjdk-17-jdk-headless junit4 ant
+libavcodec-dev libavformat-dev libavdevice-dev libavutil-dev libswresample-dev
