@@ -236,7 +236,7 @@ EOF
 				fi
 				echo "Creating backing image: image-${STAGE}.qcow2 <- ${WORK_DIR}/image-${PREV_STAGE}.qcow2"
 				qemu-img create -f qcow2 \
-					-o backing_file=${WORK_DIR}/image-${PREV_STAGE}.qcow2 \
+					-b ${WORK_DIR}/image-${PREV_STAGE}.qcow2 -F qcow2 \
 					${WORK_DIR}/image-${STAGE}.qcow2
 				sync
 				qemu-nbd --discard=unmap -c /dev/${NBD_DEV} image-${STAGE}.qcow2
