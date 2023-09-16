@@ -1,2 +1,3 @@
-openjdk-17-jdk openjdk-17-jdk-headless junit4 ant
+openjdk-11-jdk openjdk-11-jre openjdk-17-jdk openjdk-17-jdk-headless junit4 ant
 libavcodec-dev libavformat-dev libavdevice-dev libavutil-dev libswresample-dev
+libopencv4.5-java libopencv-dev
