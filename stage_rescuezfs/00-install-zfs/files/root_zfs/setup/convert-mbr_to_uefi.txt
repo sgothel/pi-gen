@@ -1,0 +1,29 @@
+Setup /boot/efi vfat mount
+  505  mkdir /boot/efi
+  509  mount /dev/disk/by-id/ata-QEMU_HARDDISK_QM00007-part2 /boot/efi
+  512  blkid /dev/disk/by-id/ata-QEMU_HARDDISK_QM00007-part2
+  511  vi /etc/fstab
+    # was /dev/disk/by-id/ata-QEMU_HARDDISK_QM00007-part2
+    UUID=9F32-F032 /boot/efi       vfat    umask=0077      0       1
+  518  systemctl daemon-reload
+  514  umount /boot/efi
+  515  mount /boot/efi
+
+Install grub efi
+  522  sudo apt install grub-efi-amd64 -y
+  525  dpkg -P grub-pc grub-pc-bin
+  533  rm -rf /boot/grub/i386-pc
+  check
+   - existing /etc/default/grub
+   - only /boot/efi/EFI/debian/ should exist
+     - rm -rf /boot/efi/EFI/GRUB (???)
+   - may need: `sudo apt reinstall grub-efi-amd64 -y`
+
+  - Misc
+    - Not needed: `grub-install --target=x86_64-efi --bootloader-id=debian --efi-directory=/boot/efi`
+    - But could `sudo apt install --reinstall grub-efi-amd64`
+  536  update-grub
+  537  ls -la /boot/grub/
+
+BIOS
+  - Disable Secure-Boot
