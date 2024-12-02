@@ -7,7 +7,7 @@ Tool used to create Debian and Raspberry Pi derived OS images.
 
 pi-gen has been tested and runs on Debian 12 `Bookworm` 
 to produce OS images for Raspi-arm64, Raspi-armhf and PC-amd64 machines
-based on Debian 12 `Bullseye`. 
+based on Debian 12 `Bookworm`. 
 
 Debian 13 `Trixie` may be supported.
 
