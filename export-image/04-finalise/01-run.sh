@@ -10,6 +10,7 @@ fi
 
 DEPLOY_DIR2="${DEPLOY_DIR}/${IMG_FILENAME}"
 
+QCOW2_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.qcow2"
 IMG_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
 INFO_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.info"
 
@@ -98,36 +99,68 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
     cp -a "${ROOTFS_DIR}/boot" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}"
 fi
 
+if [ "${ROOTFS_RO}" = "1" ] ; then
+    finalize_fstab_ro "${ROOTFS_DIR}"
+fi
+
+on_chroot <<EOF
+    if [ "${TARGET_RASPI}" != "1" ]; then
+        # BIOS Boot
+        echo "GRUB Install: BIOS: ROOTFS_RO=${ROOTFS_RO}"
+        if [ "${ROOTFS_RO}" = "1" ] ; then
+            # using manually copied /boot/grub/grub.cfg
+            grub-install --target=i386-pc --force-file-id --modules="gzio part_msdos part_gpt fat" /dev/${NBD_DEV}
+        else
+            grub-install --target=i386-pc --force-file-id --modules="gzio part_msdos part_gpt fat ext2 xfs" /dev/${NBD_DEV}
+            update-grub
+        fi
+        if [ -n "${UEFI_ARCH}" ] ; then
+            # EFI Boot
+            echo "GRUB Install: UEFI: Using grub-install. ROOTFS_RO=${ROOTFS_RO}"
+            mkdir -p /boot/efi/EFI/BOOT
+            # --removable: EFI/BOOT/bootx64.efi
+            # --uefi-secure-boot (we disable this option)
+            grub-install --target=${UEFI_ARCH}-efi --removable --force-file-id --efi-directory=/boot/efi --bootloader-id=BOOT
+        fi
+        # Remove storage device related search.fs_uuid and allow multi homing
+        rm -f /boot/grub/i386-pc/load.cfg
+        if [ -n "${UEFI_ARCH}" ] ; then
+            rm -f /boot/grub/${UEFI_ARCH}-efi/load.cfg
+        fi
+    fi
+EOF
+
 unload_qimage
-make_bootable_image "${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.qcow2" \
-    "$IMG_FILE" \
-    "$IMG_FILE_ROOT_EXT4" "$INFO_FILE_ROOT"
 
 if [ "${ROOTFS_RO}" = "1" ] ; then
-    mount -o ro "$IMG_FILE_ROOT_EXT4" "${ROOTFS_DIR}"
-    #mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_GZ}" -comp gzip
-    mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_LZO}" -comp lzo
-    #mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_ZSTD}" -comp zstd -Xcompression-level 10
-    umount "${ROOTFS_DIR}"
+    rm -f "${IMG_FILE_ROOT_SQFS_LZO}"
+    #mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_GZ}" -comp gzip -no-xattrs
+    mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_LZO}" -comp lzo -no-xattrs
+    #mksquashfs "${ROOTFS_DIR}" "${IMG_FILE_ROOT_SQFS_ZSTD}" -comp zstd -Xcompression-level 10 -no-xattrs
     cp -a "$INFO_FILE_ROOT" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_${TARGET_ARCH}_000/rootfs.inf"
 
     # cp -a "$IMG_FILE_ROOT_EXT4" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_${TARGET_ARCH}_000/rootfs.img"
     cp -a "$IMG_FILE_ROOT_SQFS_LZO" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_${TARGET_ARCH}_000/rootfs.img"
     # cp -a "$IMG_FILE_ROOT_SQFS_ZSTD" "${DEPLOY_DIR2}/sdcard${IMG_SUFFIX}/sys_${TARGET_ARCH}_000/rootfs.img"
 
-	echo "Mount image ${IMG_FILE}"
+	echo "Mount image ${QCOW2_FILE}"
 	MOUNTROOT=${STAGE_WORK_DIR}/tmpimage
 	mkdir -p $MOUNTROOT
-    mount_rawimage "${IMG_FILE}" $MOUNTROOT
-	if [ ! -d "${MOUNTROOT}/root" ]; then
+    mount_qimage "${QCOW2_FILE}" "${MOUNTROOT}"
+	if [ ! -d "${MOUNTROOT}/boot" ]; then
 		echo "Image damaged or not mounted. Exit."
 		exit 1
 	fi
     cp "$IMG_FILE_ROOT_SQFS_LZO" "${MOUNTROOT}/boot/sys_${TARGET_ARCH}_000/rootfs.img"
-	echo "Umount image ${IMG_FILE}"
+	echo "Umount image ${QCOW2_FILE}"
 	sync
     umount_image $MOUNTROOT
 fi
+
+make_bootable_image "${QCOW2_FILE}" \
+    "$IMG_FILE" \
+    "$IMG_FILE_ROOT_EXT4" "$INFO_FILE_ROOT"
+
 mv "$INFO_FILE" "$INFO_FILE_ROOT" "$DEPLOY_DIR2/"
 
 if [ "${DEPLOY_ZIP}" == "1" ]; then
@@ -150,8 +183,9 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
     #mv -v "$IMG_FILE_ROOT_SQFS_GZ" "$DEPLOY_DIR2/"
     mv -v "$IMG_FILE_ROOT_SQFS_LZO" "$DEPLOY_DIR2/"
     #mv -v "$IMG_FILE_ROOT_SQFS_ZSTD" "$DEPLOY_DIR2/"
+else
+    mv -v "$IMG_FILE_ROOT_EXT4" "$DEPLOY_DIR2/"
 fi
-mv -v "$IMG_FILE_ROOT_EXT4" "$DEPLOY_DIR2/"
 
 rm -f "${STAGE_WORK_DIR}/SHA256SUMS"
 ( cd "${DEPLOY_DIR2}"; find . -maxdepth 1 -type f -exec sha256sum -b \{\} >> "${STAGE_WORK_DIR}/SHA256SUMS" \; )

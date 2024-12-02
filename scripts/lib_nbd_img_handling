@@ -17,12 +17,13 @@ export -f lib_echo_err
 # Reusable: find and initialize free block device nodes
 # Return: new nbd device basename
 lib_init_nbd() {
-    local res=
+    local res
+    res=
 	modprobe nbd max_part=16
     for x in /sys/class/block/nbd* ; do
-        S=`cat $x/size`
+        S=$(cat "$x"/size)
         if [ "$S" == "0" ] ; then
-            res=$(basename $x)
+            res=$(basename "$x")
             break
         fi
     done
@@ -37,7 +38,7 @@ lib_check_imagetypearg() {
     if [ -z "${2}" ] ; then
         lib_echo_err "${1}: image-type not given. Exit."
         return 1
-    elif [ "${2}" != "raw" -a "${2}" != "qcow2" ]; then
+    elif [[ "${2}" != "raw" && "${2}" != "qcow2" ]]; then
         lib_echo_err "${1}: image-type must be either raw or qcow, given was ${2}. Exit."
         return 1
     fi
@@ -62,18 +63,18 @@ lib_connect_blkdev3() {
         lib_echo_err "lib_connect_blkdev3: nbd device basename not given. Exit."
         exit 1;
     fi
+    local img_file img_type nbd_dev
+    img_file=${1}
+    img_type=${2}
 
-    local img_file=${1}
-    local img_type=${2}
-    local nbd_dev=${3}
-
+    nbd_dev=${3}
     if [ "${img_type}" = "raw" ]; then
-        qemu-nbd --discard=unmap -f raw -c /dev/${nbd_dev} "${img_file}"
+        qemu-nbd --discard=unmap -f raw -c "/dev/${nbd_dev}" "${img_file}"
     else
-        qemu-nbd --discard=unmap -c /dev/${nbd_dev} "${img_file}"
+        qemu-nbd --discard=unmap -c "/dev/${nbd_dev}" "${img_file}"
     fi
 	sync
-	kpartx -a /dev/${nbd_dev}
+	kpartx -a "/dev/${nbd_dev}"
 	sync
     return 0
 }
@@ -91,11 +92,11 @@ lib_connect_blkdev2() {
     if ! lib_check_imagetypearg "lib_connect_blkdev2" "${2}" ; then
         exit 1;
     fi
+    local img_file img_type nbd_dev
+    img_file=${1}
+    img_type=${2}
 
-    local img_file=${1}
-    local img_type=${2}
-
-	local nbd_dev=$(lib_init_nbd)
+	nbd_dev=$(lib_init_nbd)
     if [ -z "${nbd_dev}" ] ; then
         lib_echo_err "lib_connect_blkdev2: NBD device not determined. Exit."
         exit 1;
@@ -114,20 +115,21 @@ lib_disconnect_blkdev() {
         lib_echo_err "lib_disconnect_blkdev: NBD device basename not given._Exit."
         exit 1;
     fi
-    local nbd_dev=${1}
-	kpartx -d /dev/${nbd_dev}
-	qemu-nbd -d /dev/${nbd_dev}
+    local nbd_dev
+    nbd_dev=${1}
+	kpartx -d "/dev/${nbd_dev}"
+	qemu-nbd -d "/dev/${nbd_dev}"
 }
 export -f lib_disconnect_blkdev
 
 lib_nbd_cleanup() {
 	DEVS="$(lsblk | grep nbd | grep disk | cut -d" " -f1)"
-	if [ ! -z "${DEVS}" ]; then
+	if [ -n "${DEVS}" ]; then
 		for d in $DEVS; do
-			if [ ! -z "${d}" ]; then
-				QDEV="$(ps xa | grep $d | grep -v grep)"
+			if [ -n "${d}" ]; then
+				QDEV="$(ps xa | grep "$d" | grep -v grep)"
 				if [ -z "${QDEV}" ]; then
-					kpartx -d /dev/${d} && qemu-nbd -d /dev/${d} && echo "Unconnected device map removed: /dev/${d}"
+					kpartx -d "/dev/${d}" && qemu-nbd -d "/dev/${d}" && echo "Unconnected device map removed: /dev/${d}"
 				fi
 			fi
 		done
@@ -137,20 +139,71 @@ export -f lib_nbd_cleanup
 
 lib_force_nbd_cleanup() {
 	DEVS="$(lsblk | grep nbd | grep disk | cut -d" " -f1)"
-	if [ ! -z "${DEVS}" ]; then
+	if [ -n "${DEVS}" ]; then
 		for d in $DEVS; do
-			if [ ! -z "${d}" ]; then
-				QDEV="$(ps xa | grep $d | grep -v grep)"
+			if [ -n "${d}" ]; then
+				QDEV="$(ps xa | grep "$d" | grep -v grep)"
 				if [ -z "${QDEV}" ]; then
-					kpartx -d /dev/${d} && qemu-nbd -d /dev/${d} && echo "Unconnected device map removed: /dev/${d}"
+					kpartx -d "/dev/${d}" && qemu-nbd -d "/dev/${d}" && echo "Unconnected device map removed: /dev/${d}"
                 else
-					kpartx -d /dev/${d} && qemu-nbd -d /dev/${d} && echo "Connected device map removed (force): /dev/${d}"
+					kpartx -d "/dev/${d}" && qemu-nbd -d "/dev/${d}" && echo "Connected device map removed (force): /dev/${d}"
 				fi
 			fi
 		done
 	fi
 }
 export -f lib_force_nbd_cleanup
+
+part_guid() {
+    local device part part_guid
+    device=$1
+    part=$2
+    part_guid=$(sgdisk --info="${part}" "${device}" | grep "Partition GUID code" | awk -e ' { print $4; }')
+    echo -n "${part_guid}"
+}
+part_exists() {
+    local part_guid
+    part_guid=$(part_guid "$1" "$2")
+    test -n "${part_guid}"
+    return $?
+}
+part_notexists() {
+    local part_guid
+    part_guid=$(part_guid "$1" "$2")
+    test -z "${part_guid}"
+    return $?
+}
+part_is_biosboot() {
+    local part_guid
+    part_guid=$(part_guid "$1" "$2")
+    test "${part_guid}" = "21686148-6449-6E6F-744E-656564454649"
+    return $?
+}
+part_is_efi() {
+    local part_guid
+    part_guid=$(part_guid "$1" "$2")
+    test "${part_guid}" = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
+    return $?
+}
+part_is_msfs() {
+    local part_guid
+    part_guid=$(part_guid "$1" "$2")
+    test "${part_guid}" = "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7"
+    return $?
+}
+part_is_rootfs() {
+    local part_guid
+    part_guid=$(part_guid "$1" "$2")
+    test "${part_guid}" = "0FC63DAF-8483-4772-8E79-3D69D8477DE4" \
+      -o "${part_guid}" = "6A898CC3-1DD2-11B2-99A6-080020736631"
+    return $?
+}
+part_is_zfs() {
+    local part_guid
+    part_guid=$(part_guid "$1" "$2")
+    test "${part_guid}" = "6A898CC3-1DD2-11B2-99A6-080020736631"
+    return $?
+}
 
 # Reusable: mount image
 # Input {1}: image-file name
@@ -171,25 +224,58 @@ lib_mount_image3() {
         lib_echo_err "lib_mount_image3: mountpoint not given. Exit."
         exit 1;
     fi
-    local img_file=${1}
-    local img_type=${2}
-    local mnt_dir=${3}
+    local img_file img_type mnt_dir nbd_dev
+    img_file=${1}
+    img_type=${2}
+    mnt_dir=${3}
 
-	local nbd_dev=$(lib_connect_blkdev2 "${img_file}" "${img_type}")
+	nbd_dev=$(lib_connect_blkdev2 "${img_file}" "${img_type}")
     if [ -z "${nbd_dev}" ] ; then
         lib_echo_err "lib_mount_image3: NBD device not determined. Exit."
         exit 1;
     fi
 
-    # Use heuristic: p1 /boot, p2 /
-    local p1dev="/dev/mapper/${nbd_dev}p1"
-    local p2dev="/dev/mapper/${nbd_dev}p2"
-    if [ -e ${p1dev} -a -e ${p2dev} ]; then
-        mount -v ${p2dev} "${mnt_dir}" >&2
+    # Total Combinations
+    # - 1: 1 bios-boot, 1 efi, 3 boot (fat, mounted)
+    # - 2: 1 bios-boot, 2 efi, 3 root
+    # - 3: 1 boot (fat, mounted), 2 root (RASPI)
+    # - 4: 1 boot (fat, unused),  2 root (no RASPI)
+    # - 5: 1 boot (fat, mounted)
+    local BIOSBOOT_PART EFISYS_PART BOOT_PART ROOT_PART part_count part_i
+    BIOSBOOT_PART=
+    EFISYS_PART=
+    BOOT_PART=
+    ROOT_PART=
+    part_count=0
+    part_i=1
+    while part_exists "/dev/${nbd_dev}" ${part_i} ; do
+        let part_count=$part_count+1
+        if part_is_biosboot "/dev/${nbd_dev}" ${part_i} ; then
+            BIOSBOOT_PART="/dev/mapper/${nbd_dev}p${part_i}"
+        elif part_is_efi "/dev/${nbd_dev}" ${part_i} ; then
+            EFISYS_PART="/dev/mapper/${nbd_dev}p${part_i}"
+        elif part_is_msfs "/dev/${nbd_dev}" ${part_i} ; then
+            BOOT_PART="/dev/mapper/${nbd_dev}p${part_i}"
+        elif part_is_rootfs "/dev/${nbd_dev}" ${part_i} ; then
+            ROOT_PART="/dev/mapper/${nbd_dev}p${part_i}"
+        fi
+        let part_i=${part_i}+1
+    done
+    lib_echo_err "Detected ${part_count} partitions on /dev/${nbd_dev} to be mounted on ${mnt_dir}"
+    lib_echo_err "BIOSBOOT ${BIOSBOOT_PART}"
+    lib_echo_err "EFISYS   ${EFISYS_PART}"
+    lib_echo_err "BOOT     ${BOOT_PART}"
+    lib_echo_err "ROOT     ${ROOT_PART}"
+    if [ -n "${ROOT_PART}" ] ; then
+        mount -v "${ROOT_PART}" "${mnt_dir}" >&2
+    fi
+    if [[ -n "${BOOT_PART}" ]] && [[ "${TARGET_RASPI}" = "1" || -z "${ROOT_PART}"  ]] ; then
         mkdir -p "${mnt_dir}/boot"
-        mount -v ${p1dev} "${mnt_dir}/boot" >&2
-    elif [ -e ${p1dev} ]; then
-        mount -v ${p1dev} "${mnt_dir}" >&2
+        mount -v "${BOOT_PART}" "${mnt_dir}/boot" >&2
+    fi
+    if [ -n "${EFISYS_PART}" ] ; then
+        mkdir -p "${mnt_dir}/boot/efi"
+        mount -v "${EFISYS_PART}" "${mnt_dir}/boot/efi" >&2
     fi
     echo -n "${nbd_dev}"
 }
@@ -203,12 +289,13 @@ lib_find_nbd() {
         lib_echo_err "lib_find_nbd: mountpoint not given. Exit."
         exit 1;
     fi
-    local mnt_dir=${1}
+    local mnt_dir
+    mnt_dir=${1}
 
 	MAIN_DEVS="$(lsblk | grep nbd | grep disk | cut -d" " -f1)"
-	if [ ! -z "${MAIN_DEVS}" ]; then
+	if [ -n "${MAIN_DEVS}" ]; then
 		for md in $MAIN_DEVS; do
-			if [ ! -z "${md}" ]; then
+			if [ -n "${md}" ]; then
                 #SUB_DEVS="$(lsblk -l "/dev/${md}" | grep "${md}p" | cut -d" " -f1)"
                 if lsblk -l "/dev/${md}" | grep "${mnt_dir}" >& /dev/null ; then 
                     echo -n "${md}"
@@ -224,8 +311,9 @@ lib_find_nbd() {
 # Input {1}: mountpoint
 # Input {2}: nbd device basename
 lib_umount_image2() {
-    local mnt_dir=${1}
-    local nbd_dev=${2}
+    local mnt_dir nbd_dev
+    mnt_dir=${1}
+    nbd_dev=${2}
 
     if [ -z "${mnt_dir}" ] ; then
         lib_echo_err "lib_umount_image2: mountpoint not given. Exit."
@@ -257,8 +345,9 @@ lib_umount_image1() {
         lib_echo_err "lib_umount_image1: mountpoint not given. Exit."
         exit 1;
     fi
-    local mnt_dir=${1}
-    local nbd_dev=$(lib_find_nbd "${mnt_dir}")
+    local mnt_dir nbd_dev
+    mnt_dir=${1}
+    nbd_dev=$(lib_find_nbd "${mnt_dir}")
     if [ -z "${nbd_dev}" ] ; then
         lib_echo_err "lib_umount_image: nbd device basename not found via mountpoint ${mnt_dir}. Continuing."
     fi

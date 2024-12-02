@@ -1,9 +1,17 @@
 #!/bin/bash -e
 
 if [ "${ROOTFS_RO}" = "1" ] ; then
-    install -v -m 644 files/fstab-rootfs_ro "${ROOTFS_DIR}/etc/fstab"
+    if [ -n "${UEFI_ARCH}" ] ; then
+        install -v -m 644 files/fstab-efisys-rootfs_ro "${ROOTFS_DIR}/etc/fstab"
+    else
+        install -v -m 644 files/fstab-bios-rootfs_ro "${ROOTFS_DIR}/etc/fstab"
+    fi
 else
-    install -v -m 644 files/fstab-rootfs_rw "${ROOTFS_DIR}/etc/fstab"
+    if [ -n "${UEFI_ARCH}" ] ; then
+        install -v -m 644 files/fstab-efisys-rootfs_rw "${ROOTFS_DIR}/etc/fstab"
+    else
+        install -v -m 644 files/fstab-bios-rootfs_rw "${ROOTFS_DIR}/etc/fstab"
+    fi
 fi
 install -m 644 files/overlay_mount.service          "${ROOTFS_DIR}/lib/systemd/system/"
 install -m 755 files/overlay_mount	                "${ROOTFS_DIR}/etc/init.d/"
@@ -81,6 +89,7 @@ on_chroot << EOF
     fi
     systemctl disable regenerate_ssh_host_keys
     systemctl mask regenerate_ssh_host_keys
+    chmod go-rwx /etc/ssh/ssh_host*key
 
     if [ "${ROOTFS_RO}" = "1" ] ; then
         sed -i -e 's/^D \/tmp/#D \/tmp/g' /usr/lib/tmpfiles.d/tmp.conf
@@ -159,11 +168,23 @@ on_chroot << EOF
             echo "\$i" >> /etc/modules
             echo "\$i" >> /etc/initramfs-tools/modules
         done
+    elif [ -n "${UEFI_ARCH}" ] ; then
+        systemctl disable resize2fs_once
+        systemctl mask resize2fs_once
     else
         systemctl unmask resize2fs_once
         systemctl enable resize2fs_once
     fi
 EOF
+
+mkdir -p "${ROOTFS_DIR}/boot/grub/theme"
+install -m 644 files/grub/theme/grub.png "${ROOTFS_DIR}/boot/grub/theme/grub.png"
+install -m 644 files/grub/theme/desktop-4x3.svg "${ROOTFS_DIR}/boot/grub/theme/desktop-4x3.svg"
+install -m 644 files/grub/theme/desktop-4x3.png "${ROOTFS_DIR}/boot/grub/theme/desktop-4x3.png"
+install -m 644 files/grub/theme/desktop-16x9.svg "${ROOTFS_DIR}/boot/grub/theme/desktop-16x9.svg"
+if [ "${TARGET_RASPI}" != "1" ]; then
+    echo "GRUB_BACKGROUND=/boot/theme/grub.png"           >> "${ROOTFS_DIR}/etc/default/grub"
+fi
 
 if [ "${ROOTFS_RO}" = "1" ] ; then
     if [ "${TARGET_RASPI}" = "1" ]; then
@@ -177,17 +198,21 @@ if [ "${ROOTFS_RO}" = "1" ] ; then
             sed -i "s/arm_64bit=1/# arm_64bit=1/g"           "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/config.txt"
         fi
     else
+        install -m 644 files/grub/grub-rootfs_ro.cfg         "${ROOTFS_DIR}/boot/grub/grub.cfg"
         install -m 644 files/grub/custom-rootfs_ro.cfg       "${ROOTFS_DIR}/boot/grub/custom.cfg"
         sed -i "s/sys_amd64_000/sys_${TARGET_ARCH}_000/g"    "${ROOTFS_DIR}/boot/grub/custom.cfg"
         cp "${ROOTFS_DIR}/boot/grub/custom.cfg"              "${ROOTFS_DIR}/boot/sys_${TARGET_ARCH}_000/"
         sed -i 's/GRUB_DEFAULT=.*$/GRUB_DEFAULT=loop_rootfs/g;s/GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=0/g;s/#GRUB_TERMINAL=.*$/GRUB_TERMINAL=console/g;s/#GRUB_DISABLE_LINUX_UUID=.*$/GRUB_DISABLE_LINUX_UUID=true/g'                    "${ROOTFS_DIR}/etc/default/grub"
         echo "GRUB_DISABLE_LINUX_PARTUUID=true"           >> "${ROOTFS_DIR}/etc/default/grub"
         echo "GRUB_DISABLE_RECOVERY=true"                 >> "${ROOTFS_DIR}/etc/default/grub"
+        echo "GRUB_DISABLE_OS_PROBER=true"                >> "${ROOTFS_DIR}/etc/default/grub"
         rm -f                                                "${ROOTFS_DIR}/etc/grub.d/05_debian_theme"
         rm -f                                                "${ROOTFS_DIR}/etc/grub.d/10_linux"
         rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_linux_xen"
         rm -f                                                "${ROOTFS_DIR}/etc/grub.d/30_os-prober"
-        rm -f                                                "${ROOTFS_DIR}/etc/grub.d/30_uefi-firmware"
+        if [ -z "${UEFI_ARCH}" ] ; then
+            rm -f                                            "${ROOTFS_DIR}/etc/grub.d/30_uefi-firmware"
+        fi
         rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_memtest86"
         rm -f                                                "${ROOTFS_DIR}/etc/grub.d/20_memtest86+"
     fi
@@ -268,15 +293,37 @@ on_chroot <<EOF
         fi
     fi
     if [ "${TARGET_RASPI}" != "1" ]; then
-        update-grub
+        # BIOS Boot
+        echo "GRUB Install: BIOS: ROOTFS_RO=${ROOTFS_RO}"
         if [ "${ROOTFS_RO}" = "1" ] ; then
-            grub-install --force-file-id --modules="gzio part_msdos fat" /dev/${NBD_DEV}
+            # using manually copied /boot/grub/grub.cfg
+            grub-install --target=i386-pc --force-file-id --modules="gzio part_msdos part_gpt fat" /dev/${NBD_DEV}
         else
-            grub-install --force-file-id --modules="gzio part_msdos fat ext2" /dev/${NBD_DEV}
+            grub-install --target=i386-pc --force-file-id --modules="gzio part_msdos part_gpt fat ext2 xfs" /dev/${NBD_DEV}
+            update-grub
         fi
-
+        if [ -n "${UEFI_ARCH}" ] ; then
+            # EFI Boot
+            echo "GRUB Install: UEFI: Using grub-install. ROOTFS_RO=${ROOTFS_RO}"
+            mkdir -p /boot/efi/EFI/BOOT
+            # --removable: EFI/BOOT/bootx64.efi
+            # --uefi-secure-boot (we disable this option)
+            grub-install --target=${UEFI_ARCH}-efi --removable --force-file-id --efi-directory=/boot/efi --bootloader-id=BOOT
+        fi
         # Remove storage device related search.fs_uuid and allow multi homing
         rm -f /boot/grub/i386-pc/load.cfg
+        if [ -n "${UEFI_ARCH}" ] ; then
+            rm -f /boot/grub/${UEFI_ARCH}-efi/load.cfg
+        fi
     fi
 EOF
 
+if [ "${TARGET_RASPI}" != "1" ]; then
+    if [ -n "${UEFI_ARCH}" ] ; then
+        if [ "${ROOTFS_RO}" = "1" ] ; then
+            install -m 644 files/EFI/BOOT/grub-rootfs_ro.cfg "${ROOTFS_DIR}/boot/efi/EFI/BOOT/grub.cfg"
+        else
+            install -m 644 files/EFI/BOOT/grub-rootfs_rw.cfg "${ROOTFS_DIR}/boot/efi/EFI/BOOT/grub.cfg"
+        fi
+    fi
+fi

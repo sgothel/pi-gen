@@ -1,0 +1,188 @@
+#!/bin/bash
+
+while getopts "c:" flag
+do
+    case "$flag" in
+        c)
+            EXTRA_CONFIG="$OPTARG"
+            # shellcheck disable=SC1090
+            echo "Reading config from ${EXTRA_CONFIG}"
+            source "$EXTRA_CONFIG"
+            ;;
+        *)
+            ;;
+    esac
+done
+
+term() {
+    if [ "${USE_QCOW2}" = "1" ]; then
+        log "Unloading image"
+        unload_qimage
+    fi
+}
+
+trap term EXIT INT TERM
+
+export PI_GEN=${PI_GEN:-pi-gen}
+export PI_GEN_REPO=${PI_GEN_REPO:-https://jausoft.com/cgit/pi-gen.git/about/}
+
+export USE_QEMU="${USE_QEMU:-0}"
+
+if [ -z "${IMG_NAME}" ]; then
+    echo "IMG_NAME not set" 1>&2
+    exit 1
+fi
+export IMG_DATE="${IMG_DATE:-"$(date --utc +%Y-%m-%d_%H:%M:%S)"}"
+export IMG_FILENAME="${IMG_FILENAME:-"${IMG_DATE}-${IMG_NAME}"}"
+export ZIP_FILENAME="${ZIP_FILENAME:-"image_${IMG_DATE}-${IMG_NAME}"}"
+export WORK_DIR="${WORK_DIR:-"${BASE_DIR}/work/${IMG_DATE}-${IMG_NAME}"}"
+export IMG_NAME
+export IMG_SUFFIX
+
+export DEPLOY_DIR=${DEPLOY_DIR:-"${BASE_DIR}/deploy"}
+export DEPLOY_ZIP="${DEPLOY_ZIP:-1}"
+export WORK_DIR="${WORK_DIR:-"${BASE_DIR}/work"}"
+export LOG_FILE="${WORK_DIR}/build.log"
+
+export TARGET_HOSTNAME=${TARGET_HOSTNAME:-raspberrypi}
+
+export FIRST_USER_NAME=${FIRST_USER_NAME:-pi}
+export FIRST_USER_PASS=${FIRST_USER_PASS:-raspberry}
+export RELEASE=${RELEASE:-buster}
+
+export TARGET_RASPI="${TARGET_RASPI:-1}"
+export TARGET_ARCH="${TARGET_ARCH:-arm64}"
+
+export WPA_ESSID
+export WPA_PASSWORD
+export WPA_COUNTRY
+export ENABLE_SSH="${ENABLE_SSH:-0}"
+export PUBKEY_ONLY_SSH="${PUBKEY_ONLY_SSH:-0}"
+
+export LOCALE_DEFAULT="${LOCALE_DEFAULT:-en_US.UTF-8}"
+
+export KEYBOARD_KEYMAP="${KEYBOARD_KEYMAP:-us}"
+export KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT:-English (US)}"
+
+export TIMEZONE_DEFAULT="${TIMEZONE_DEFAULT:-Europe/Berlin}"
+
+export GIT_HASH=${GIT_HASH:-"$(git rev-parse HEAD)"}
+
+export PUBKEY_SSH_FIRST_USER
+
+export CLEAN
+export APT_PROXY
+
+export STAGE
+export STAGE_DIR
+export STAGE_WORK_DIR
+export PREV_STAGE
+export PREV_STAGE_DIR
+export ROOTFS_DIR
+export PREV_ROOTFS_DIR
+export NOOBS_NAME
+export NOOBS_DESCRIPTION
+export EXPORT_DIR
+export EXPORT_ROOTFS_DIR
+
+export QUILT_PATCHES
+export QUILT_NO_DIFF_INDEX=1
+export QUILT_NO_DIFF_TIMESTAMPS=1
+export QUILT_REFRESH_ARGS="-p ab"
+
+export UEFI_ARCH
+
+if [ "${GPT_BIOS_UEFI}" = "1" -a "${TARGET_RASPI}" = "1" ]; then
+    echo "Not supported: GPT_BIOS_UEFI + TARGET_RASPI"
+    exit 1
+fi
+if [ "${GPT_BIOS_UEFI}" = "1" -a -z "${UEFI_ARCH}" ] ; then
+    case "${TARGET_ARCH}" in
+        "amd64")
+            UEFI_ARCH="x86_64" ;;
+        "i386")
+            UEFI_ARCH="i386" ;;
+        *)
+            echo "GPT BIOS/UEFI not supported on target arch ${TARGET_ARCH}"
+            UEFI_ARCH=
+            GPT_BIOS_UEFI=
+            exit 1 ;;
+    esac
+fi
+
+if [ -z "${DEB_SERVER}" ]; then
+    export DEB_SERVER="http://deb.debian.org/debian"
+fi
+
+if [ -z "${IS_TESTING}" ]; then
+    IS_TESTING=
+    case "${RELEASE}" in
+        "jessie")
+            IS_TESTING=0 ;;
+        "stretch")
+            IS_TESTING=0 ;;
+        "buster")
+            IS_TESTING=0 ;;
+        "bullseye")
+            IS_TESTING=0 ;;
+        "bookworm")
+            IS_TESTING=0 ;;
+        "trixie")
+            IS_TESTING=0 ;;
+        *)
+            IS_TESTING=1 ;;
+    esac
+fi
+export IS_TESTING
+
+if [ "${PREFER_RASPI_SOURCE}" = "1" -a "${TARGET_RASPI}" = "1" -a "${TARGET_ARCH}" = "armhf" ]; then
+    USE_RASPI_SOURCE=1
+else
+    USE_RASPI_SOURCE=0
+fi
+export USE_RASPI_SOURCE
+
+# shellcheck source=scripts/common
+source "${SCRIPT_DIR}/common"
+# shellcheck source=scripts/dependencies_check
+source "${SCRIPT_DIR}/dependencies_check"
+
+# merely a local flag for `run_stage` for EXPORT_DIRS (images) only
+export USE_QCOW2=1
+
+export BASE_QCOW2_SIZE=${BASE_QCOW2_SIZE:-15200M}
+source "${SCRIPT_DIR}/qcow2_handling"
+
+export ROOTFS_RO_OVERLAY_TMPFS_SIZE=${ROOTFS_RO_OVERLAY_TMPFS_SIZE:-128M}
+# vfat, ext2, ext4 or xfs
+export BOOT_FSTYPE=${BOOT_FSTYPE:-vfat}
+# codepage is hardcoded in 'loop_rootfs' and scripts, as well as required by pi-gen build
+if [ -z ${FAT_CODEPAGE+x} ]; then
+    readonly FAT_CODEPAGE="437"
+    export FAT_CODEPAGE
+fi
+export BOOT_FSOPTIONS=${BOOT_FSOPTIONS:-rw,noatime,fmask=0022,dmask=0022,codepage=${FAT_CODEPAGE},iocharset=ascii,shortname=mixed,errors=remount-ro}
+
+dependencies_check "${BASE_DIR}/depends"
+
+#check username is valid
+if [[ ! "$FIRST_USER_NAME" =~ ^[a-z][-a-z0-9_]*$ ]]; then
+    echo "Invalid FIRST_USER_NAME: $FIRST_USER_NAME"
+    exit 1
+fi
+
+if [[ -n "${APT_PROXY}" ]] && ! curl --silent "${APT_PROXY}" >/dev/null ; then
+    echo "Could not reach APT_PROXY server: ${APT_PROXY}"
+    exit 1
+fi
+
+if [[ -n "${WPA_PASSWORD}" && ${#WPA_PASSWORD} -lt 8 || ${#WPA_PASSWORD} -gt 63  ]] ; then
+    echo "WPA_PASSWORD" must be between 8 and 63 characters
+    exit 1
+fi
+
+if [[ "${PUBKEY_ONLY_SSH}" = "1" && -z "${PUBKEY_SSH_FIRST_USER}" ]]; then
+    echo "Must set 'PUBKEY_SSH_FIRST_USER' to a valid SSH public key if using PUBKEY_ONLY_SSH"
+    exit 1
+fi
+

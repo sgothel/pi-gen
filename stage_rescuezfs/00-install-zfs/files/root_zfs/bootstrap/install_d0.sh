@@ -22,27 +22,20 @@ modprobe zfs
 #mdadm --zero-superblock --force /dev/disk/by-id/$DISK2
 #mdadm --zero-superblock --force /dev/disk/by-id/$DISK3
  
-# Clear the partition table:
-sgdisk --zap-all /dev/disk/by-id/$DISK1
-sgdisk --zap-all /dev/disk/by-id/$DISK2
-sgdisk --zap-all /dev/disk/by-id/$DISK3
-sync
-
-# 2.2 Partition your disk:
+# 2.2 Partition your disks:
 #
 # We assume advanced format: 4096 bytes per sector, 8 multiple
 #
-# Legacy (BIOS) booting (part-1): Used for GRUB boot-code in 'MBR-gap':
-sgdisk -a1 -n1:40:8191 -t1:EF02 /dev/disk/by-id/$DISK1
-sgdisk -a1 -n1:40:8191 -t1:EF02 /dev/disk/by-id/$DISK2
-sgdisk -a1 -n1:40:8191 -t1:EF02 /dev/disk/by-id/$DISK3
-sync
-
-# ZFS partition: Remainder
-sgdisk -n2:0:0     -t2:BF01 /dev/disk/by-id/$DISK1
-sgdisk -n2:0:0     -t2:BF01 /dev/disk/by-id/$DISK2
-sgdisk -n2:0:0     -t2:BF01 /dev/disk/by-id/$DISK3
-sync
+# EF02 Bios-Boot (Grub core)
+# EF00 EFI System
+# BF01 ZFS Root
+for dname in "${DISK1}" "${DISK2}" "${DISK3}" ; do
+    sgdisk --zap-all \
+      --new 1::+1M   --typecode=1:EF02 \
+      --new 2::+700M --typecode=2:EF00 \
+      --new 3::0     --typecode=3:BF01 \
+      "/dev/disk/by-id/${dname}"
+done
 
 sleep 3
 sync

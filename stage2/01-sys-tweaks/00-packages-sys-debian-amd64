@@ -1,0 +1,10 @@
+sysfsutils
+xfsprogs
+e2fsprogs
+#grub-pc
+#grub-efi-amd64-bin
+grub-pc-bin
+efibootmgr
+grub-efi-amd64
+grub-efi-amd64-bin
+grub-efi-amd64-signed

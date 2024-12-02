@@ -24,12 +24,5 @@ on_chroot <<EOF
         mkdir -p /data/sdcard
         cp -a /boot/sys_${TARGET_ARCH}_000 /data/sdcard/
     fi
-    if [ "${TARGET_RASPI}" != "1" ]; then
-        # Update grub.cfg for (1 ROOTFS_RO): timeout=5 or (2) normal memtest86+.bin menu entries
-        update-grub
-
-        # Remove storage device related search.fs_uuid and allow multi homing
-        rm -f /boot/grub/i386-pc/load.cfg
-    fi
 EOF
 

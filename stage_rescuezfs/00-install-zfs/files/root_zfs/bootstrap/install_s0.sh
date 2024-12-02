@@ -83,7 +83,7 @@ cp -a ${BASE_DIR}/../../zfs "${ROOTFS_DIR}/root/"
 
 on_chroot << EOF
     # Build ZFS from scratch requirements
-    apt_install sysfsutils grub-pc \
+    apt_install sysfsutils grub-pc-bin efibootmgr grub-efi-amd64 grub-efi-amd64-bin grub-efi-amd64-signed \
                 build-essential autoconf automake libtool gawk alien fakeroot dkms libblkid-dev uuid-dev libudev-dev \
                 libssl-dev zlib1g-dev libaio-dev libattr1-dev libelf-dev \
                 linux-headers-generic \

@@ -5,9 +5,11 @@ Tool used to create Debian and Raspberry Pi derived OS images.
 
 ## Dependencies
 
-pi-gen has been tested and runs on Debian 11 `Bullseye` 
+pi-gen has been tested and runs on Debian 12 `Bookworm` 
 to produce OS images for Raspi-arm64, Raspi-armhf and PC-amd64 machines
-based on Debian 10 `Buster` and Debian 11 `Bullseye`. 
+based on Debian 12 `Bullseye`. 
+
+Debian 13 `Trixie` may be supported.
 
 PC-i386 is also supported, however, it has not been tested lately.
 
@@ -19,16 +21,15 @@ Related config variables are
 It might be possible to use Docker on other Linux distributions as described below,
 however, I have not tested this procedure.
 
-To install the required dependencies for `pi-gen` you should run:
+The file `depends` contains a list of tools needed.  The format of this
+package is `<tool>[:<debian-package>]`.
 
+To install the required dependencies for `pi-gen` you should run:
 ```bash
 apt-get install coreutils quilt parted qemu-user-static debootstrap zerofree zip \
 dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc \
-qemu-utils kpartx squashfs-tools fatattr
+qemu-utils kpartx squashfs-tools fatattr e2fsprogs xfsprogs gdisk
 ```
-
-The file `depends` contains a list of tools needed.  The format of this
-package is `<tool>[:<debian-package>]`.
 
 ### Package Source
 For all targets, default source for `debootstrap` and `apt` package management
@@ -52,6 +53,11 @@ as the package source.
     **CAUTION:**  Although the qcow2 build mechanism will run fine inside Docker, it can happen
     that the network block device is not disconnected correctly after the Docker process has
     ended abnormally. In that case see [Disconnect an image if something went wrong](#Disconnect-an-image-if-something-went-wrong)
+
+* UEFI Bootable Image
+
+    To support booting the image from UEFI (without `secure-boot`) as well as BIOS,
+    enable option `GPT_BIOS_UEFI`, see below.
 
 ## Config
 
@@ -121,6 +127,17 @@ The following environment variables are supported:
 
    Note: `apt cache` is disabled for all target configurations.
 
+ * `GPT_BIOS_UEFI` (Default: unset)
+
+   If set to one, i.e. `GPT_BIOS_UEFI=1`, a GPT partition table
+   will be used, bootable under bios and UEFI (without `secure-boot`).
+
+   Disable `secure-boot` in your UEFI bios!
+
+   In case the UEFI system doesn't launch the installed `EFISYS` partition directly,
+   utilize the UEFI `boot from file` facility and select
+   file `EFI/BOOT/BOOTX64.EFI` from the `EFISYS` partition.
+
  * `ROOTFS_RO` (Default: unset)
 
    If set to one, i.e. `ROOTFS_RO=1`, the root filesystem will be set read-only,
@@ -135,9 +152,13 @@ The following environment variables are supported:
    ```
 
    Further all `apt-daily` systemd tasks are disabled,
-   the ssh host keys are retained while `regenerate_ssh_host_keys` is disabled
-   and the final `/boot/config.txt` has `splash` disabled (no rainbow).
+   the ssh host keys are retained while `regenerate_ssh_host_keys` is disabled.
+
+   On `amd64` PC platforms, grub is utilized here as usual, launching the `initramfs`
+   as described above.
    
+   On Raspberry `/boot/config.txt` has `splash` disabled (no rainbow).
+
  * `ROOTFS_RO_OVERLAY_TMPFS_SIZE` (Default: 128M)
 
    If using `ROOTFS_RO`, this variable specifies the shared `tmpfs` size

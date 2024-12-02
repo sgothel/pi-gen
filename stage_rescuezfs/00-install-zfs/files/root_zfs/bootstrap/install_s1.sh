@@ -52,7 +52,8 @@ on_chroot << EOF
 SELEOF
 
     # Fundamentals
-    apt_install less sysfsutils grub-pc vim sharutils psmisc htop patch fbset sudo \
+    apt_install less sysfsutils grub-pc-bin efibootmgr grub-efi-amd64 grub-efi-amd64-bin grub-efi-amd64-signed \
+                vim sharutils psmisc htop patch fbset sudo \
                 console-setup keyboard-configuration debconf-utils parted unzip bash-completion \
                 manpages-dev gdb pkg-config libstdc++6 python3-minimal strace \
                 v4l-utils lua5.1 luajit hardlink ca-certificates \

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-sdir=`dirname $(readlink -f "${BASH_SOURCE[0]}")`
-rootdir=`dirname $sdir`
+sdir=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+rootdir=$(dirname "$sdir")
 
 # codepage is hardcoded in 'loop_rootfs' and scripts, as well as required by pi-gen build
 if [ -z ${FAT_CODEPAGE+x} ]; then
@@ -14,10 +14,38 @@ fi
 export CURRENT_IMAGE
 export CURRENT_MOUNTPOINT
 
-# 1 boot, 2 data, 3 root
+# Partition Layout
+# - Note: 'bios-boot' is never mounted
+#
+# With ROOTFS_RO
+# - GPT+UEFI
+#   - 1 bios-boot, 2 efi, 3 boot (mounted)
+# - Bios
+#   - 1 boot (mounted)
+#
+# RASPI (no ROOTFS_NO)
+# - Bios
+#   - 1 boot (mounted), 2 root
+#
+# Vanilla (no ROOTFS_NO, no RASPI)
+# - GPT+UEFI
+#   - 1 bios-boot, 2 efi, 3 root
+# - Bios
+#   - 1 boot (unused), 2 root
+#
+# Total Combinations
+# - 1: 1 bios-boot, 2 efi, 3 boot (fat, mounted)
+# - 2: 1 bios-boot, 2 efi, 3 root
+# - 3: 1 boot (fat, mounted), 2 root (RASPI)
+# - 4: 1 boot (fat, unused),  2 root (no RASPI)
+# - 5: 1 boot (fat, mounted)
+
 export NBD_DEV
+export MAP_BIOSBOOT_DEV
+export MAP_EFISYS_DEV
 export MAP_BOOT_DEV
 export MAP_ROOT_DEV
+export USES_BOOT_PART
 
 # set in build.sh
 # should be fairly enough for the beginning
@@ -32,15 +60,42 @@ source ${sdir}/lib_nbd_img_handling
 
 # find and initialize free block device nodes
 init_nbd() {
+    if [[ "${GPT_BIOS_UEFI}" = "1" && "${TARGET_RASPI}" = "1" ]]; then
+        echo "Not supported: GPT_BIOS_UEFI + TARGET_RASPI"
+        exit 1
+    fi
+    if [[ "${TARGET_RASPI}" = "1" || "${ROOTFS_RO}" = "1" ]]; then
+        USES_BOOT_PART="1"
+    else
+        USES_BOOT_PART="0"
+    fi
+
 	if [ -z "${NBD_DEV}" ]; then
-        local nbd_dev=$(lib_init_nbd)
+        local nbd_dev
+        nbd_dev=$(lib_init_nbd)
         if [ -z "${nbd_dev}" ] ; then
             echo "init_nbd: NBD device not determined. Exit."
             exit 1;
         fi
         NBD_DEV=${nbd_dev}
-        MAP_BOOT_DEV=/dev/mapper/${nbd_dev}p1
-        MAP_ROOT_DEV=/dev/mapper/${nbd_dev}p2
+        MAP_BIOSBOOT_DEV=
+        MAP_EFISYS_DEV=
+        MAP_BOOT_DEV=
+        MAP_ROOT_DEV=
+        if [ "${GPT_BIOS_UEFI}" = "1" ] ; then
+            MAP_BIOSBOOT_DEV=/dev/mapper/${nbd_dev}p1
+            MAP_EFISYS_DEV=/dev/mapper/${nbd_dev}p2
+            if [ "${ROOTFS_RO}" = "1" ]; then
+                MAP_BOOT_DEV=/dev/mapper/${nbd_dev}p3
+            else
+                MAP_ROOT_DEV=/dev/mapper/${nbd_dev}p3
+            fi
+        else
+            MAP_BOOT_DEV=/dev/mapper/${nbd_dev}p1
+            if [ "${ROOTFS_RO}" != "1" ]; then
+                MAP_ROOT_DEV=/dev/mapper/${nbd_dev}p2
+            fi
+        fi
     fi
 }
 export -f init_nbd
@@ -81,8 +136,10 @@ disconnect_blkdev() {
     fi
     lib_disconnect_blkdev "${NBD_DEV}"
 	NBD_DEV=
-	MAP_BOOT_DEV=
-	MAP_ROOT_DEV=
+    MAP_BIOSBOOT_DEV=
+    MAP_EFISYS_DEV=
+    MAP_BOOT_DEV=
+    MAP_ROOT_DEV=
 	CURRENT_IMAGE=
 }
 export -f disconnect_blkdev
@@ -104,13 +161,17 @@ mount_qimage() {
         echo "mount_qimage: NBD_DEV not determined. Exit."
         exit 1;
     fi
-    if [ -z "$MAP_ROOT_DEV" -o -z "$MAP_BOOT_DEV" ] ; then
-        echo "mount_qimage: map devices not determined. Exit."
-        exit 1;
+    if [ -n "${MAP_ROOT_DEV}" ]; then
+        mount -v -t ext4 $MAP_ROOT_DEV "$2"
     fi
-	mount -v -t ext4 $MAP_ROOT_DEV "$2"
-	mkdir -p "$2/boot"
-	mount -v -t ${BOOT_FSTYPE} $MAP_BOOT_DEV "$2/boot"
+    mkdir -p "$2/boot"
+    if [ "${USES_BOOT_PART}" = "1" ] ; then
+        mount -v -t ${BOOT_FSTYPE} $MAP_BOOT_DEV "$2/boot"
+    fi
+    if [ -n "$MAP_EFISYS_DEV" ] ; then
+        mkdir -p "$2/boot/efi"
+        mount -v -t vfat $MAP_EFISYS_DEV "$2/boot/efi"
+    fi
 	CURRENT_MOUNTPOINT="$2"
 }
 export -f mount_qimage
@@ -132,13 +193,17 @@ mount_rawimage() {
         echo "mount_rawimage: NBD_DEV not determined. Exit."
         exit 1;
     fi
-    if [ -z "$MAP_ROOT_DEV" -o -z "$MAP_BOOT_DEV" ] ; then
-        echo "mount_rawimage: map devices not determined. Exit."
-        exit 1;
+    if [ -n "${MAP_ROOT_DEV}" ]; then
+        mount -v -t ext4 $MAP_ROOT_DEV "$2"
     fi
-	mount -v -t ext4 $MAP_ROOT_DEV "$2"
-	mkdir -p "$2/boot"
-	mount -v -t ${BOOT_FSTYPE} $MAP_BOOT_DEV "$2/boot"
+    mkdir -p "$2/boot"
+    if [ "${USES_BOOT_PART}" = "1" ] ; then
+        mount -v -t ${BOOT_FSTYPE} $MAP_BOOT_DEV "$2/boot"
+    fi
+    if [ -n "$MAP_EFISYS_DEV" ] ; then
+        mkdir -p "$2/boot/efi"
+        mount -v -t vfat $MAP_EFISYS_DEV "$2/boot/efi"
+    fi
 	CURRENT_MOUNTPOINT="$2"
 }
 export -f mount_rawimage
@@ -169,8 +234,11 @@ export -f umount_image
 # create base image / backing image / mount image
 load_qimage() {
 	if [ -z "${CURRENT_MOUNTPOINT}" ]; then
+        if [ "${ROOTFS_RO}" = "1" ]; then
+			rm -rf "${ROOTFS_DIR}"
+        fi
 		if [ ! -d "${ROOTFS_DIR}" ]; then
-			mkdir -p "${ROOTFS_DIR}";
+			mkdir -p "${ROOTFS_DIR}"
 		fi
 
 		if [ "${CLEAN}" = "1" ] && [ -f "${WORK_DIR}/image-${STAGE}.qcow2" ]; then
@@ -187,16 +255,30 @@ load_qimage() {
 				sync
 				qemu-nbd --discard=unmap -c /dev/${NBD_DEV} image-${STAGE}.qcow2
 				sync
-
-                if [ "${ROOTFS_RO}" = "1" ] ; then
-                    # 1 boot (7100 MiB), rootfs (remainder of BASE_QCOW2_SIZE)
-                    sfdisk /dev/${NBD_DEV} << EOF
-4MiB,7100MiB,c,*
-7104MiB,,83;
+                if [ -n "$MAP_EFISYS_DEV" ] ; then
+                    if [ "${ROOTFS_RO}" = "1" ] ; then
+                        # 1 bios-boot (1 MiB), efi-sys (700MiB), boot (remainder of BASE_QCOW2_SIZE)
+                        sgdisk --zap-all \
+                          --new 1::+1M   --typecode=1:ef02 --change-name=1:'BIOS boot partition' \
+                          --new 2::+700M --typecode=2:ef00 --change-name=2:'EFI System' \
+                          --new 3::0     --typecode=3:0700 --change-name=2:'Boot RO root filesystem host' \
+                          "/dev/${NBD_DEV}"
+                    else
+                        # 1 bios-boot (1 MiB), efi-sys (700MiB), rootfs (remainder of BASE_QCOW2_SIZE)
+                        sgdisk --zap-all \
+                          --new 1::+1M   --typecode=1:ef02 --change-name=1:'BIOS boot partition' \
+                          --new 2::+700M --typecode=2:ef00 --change-name=2:'EFI System' \
+                          --new 3::0     --typecode=3:8300 --change-name=3:'Root filesystem' \
+                          "/dev/${NBD_DEV}"
+                    fi
+                elif [ "${ROOTFS_RO}" = "1" ] ; then
+                    # 1 boot (remainder of BASE_QCOW2_SIZE), no rootfs
+                    sfdisk "/dev/${NBD_DEV}" << EOF
+4MiB,,c,;
 EOF
                 else
                     # 1 boot (250 MiB), rootfs (remainder of BASE_QCOW2_SIZE)
-                    sfdisk /dev/${NBD_DEV} << EOF
+                    sfdisk "/dev/${NBD_DEV}" << EOF
 4MiB,250MiB,c,*
 254MiB,,83;
 EOF
@@ -204,30 +286,32 @@ EOF
 				sync
 
 				kpartx -a /dev/${NBD_DEV}
-                case ${BOOT_FSTYPE} in
-                    xfs)
-                        mkfs.xfs -L BOOT $MAP_BOOT_DEV
-                        ;;
-                    ext4)
-                        mkfs.ext4 -L BOOT -O "^huge_file,^metadata_csum,^64bit" $MAP_BOOT_DEV
-                        ;;
-                    ext2)
-                        mkfs.ext2 -L BOOT -O "^has_journal,^huge_file,^metadata_csum,^64bit" $MAP_BOOT_DEV
-                        ;;
-                    vfat)
-                        mkfs.fat -n BOOT -F 32 --codepage=${FAT_CODEPAGE} -v $MAP_BOOT_DEV
-                        ;;
-                    *)
-                        echo "BOOT_FSTYPE not one of[xfs,ext4,ext2,vfat] but '${BOOT_FSTYPE}'. Exit."
-                        exit 1;
-                        ;;
-                esac
+                if [ -n "${MAP_BOOT_DEV}" ]; then
+                    case ${BOOT_FSTYPE} in
+                        xfs)
+                            mkfs.xfs -L BOOT "$MAP_BOOT_DEV"
+                            ;;
+                        ext4)
+                            mkfs.ext4 -L BOOT -O "^huge_file,^metadata_csum,^64bit" "$MAP_BOOT_DEV"
+                            ;;
+                        ext2)
+                            mkfs.ext2 -L BOOT -O "^has_journal,^huge_file,^metadata_csum,^64bit" "$MAP_BOOT_DEV"
+                            ;;
+                        vfat)
+                            mkfs.fat -n BOOT -F 32 --codepage="${FAT_CODEPAGE}" -v "$MAP_BOOT_DEV"
+                            ;;
+                        *)
+                            echo "BOOT_FSTYPE not one of[xfs,ext4,ext2,vfat] but '${BOOT_FSTYPE}'. Exit."
+                            exit 1;
+                            ;;
+                    esac
+                fi
+                if [ -n "$MAP_EFISYS_DEV" ] ; then
+                    mkfs.fat -n EFISYS -F 32 -v "$MAP_EFISYS_DEV"
+                fi
                     
-                if [ "${ROOTFS_RO}" = "1" ] ; then
-                    # Set reserved-blocks-percentage for root to zero, no journaling
-                    mkfs.ext4 -L ROOTFS -m 0 -O "^has_journal,^huge_file,^metadata_csum,^64bit" $MAP_ROOT_DEV
-                else
-                    mkfs.ext4 -L ROOTFS -O "^huge_file,^metadata_csum,^64bit" $MAP_ROOT_DEV
+                if [ -n "${MAP_ROOT_DEV}" ]; then
+                    mkfs.ext4 -L ROOTFS -O "^huge_file,^metadata_csum,^64bit" "$MAP_ROOT_DEV"
                 fi
 				sync
 			else
@@ -242,11 +326,27 @@ EOF
 				qemu-nbd --discard=unmap -c /dev/${NBD_DEV} image-${STAGE}.qcow2
 				sync
 				kpartx -a /dev/${NBD_DEV}
+                if [ "${ROOTFS_RO}" = "1" ]; then
+                    if [[ -z "${PREV_ROOTFS_DIR}" || ! -d "${PREV_ROOTFS_DIR}" ]]; then
+                        echo "PREV_ROOTFS_DIR: ${PREV_ROOTFS_DIR}, stage ${STAGE}"
+                        exit 1
+                    fi
+                    echo "ROOTFS_RO: rsync ${PREV_ROOTFS_DIR}/ ${ROOTFS_DIR}/"
+                    rsync -a "${PREV_ROOTFS_DIR}/" "${ROOTFS_DIR}/"
+                    sync
+                fi
 			fi
-
-			mount -v -t ext4 $MAP_ROOT_DEV "${ROOTFS_DIR}"
-			mkdir -p "${ROOTFS_DIR}/boot"
-			mount -v -t ${BOOT_FSTYPE} $MAP_BOOT_DEV "${ROOTFS_DIR}/boot"
+            if [ -n "${MAP_ROOT_DEV}" ]; then
+                mount -v -t ext4 $MAP_ROOT_DEV "${ROOTFS_DIR}"
+            fi
+            mkdir -p "${ROOTFS_DIR}/boot"
+            if [ "${USES_BOOT_PART}" = "1" ] ; then
+                mount -v -t ${BOOT_FSTYPE} $MAP_BOOT_DEV "${ROOTFS_DIR}/boot"
+            fi
+            if [ -n "$MAP_EFISYS_DEV" ] ; then
+                mkdir -p "${ROOTFS_DIR}/boot/efi"
+                mount -v -t vfat $MAP_EFISYS_DEV "${ROOTFS_DIR}/boot/efi"
+            fi
 			CURRENT_IMAGE=${WORK_DIR}/image-${STAGE}.qcow2
 			CURRENT_MOUNTPOINT=${ROOTFS_DIR}
 			popd > /dev/null
@@ -260,7 +360,7 @@ export -f load_qimage
 
 # umount current image and refresh mount point env var
 unload_qimage() {
-	if [ ! -z "${CURRENT_MOUNTPOINT}" ]; then
+	if [ -n "${CURRENT_MOUNTPOINT}" ]; then
 		fstrim -v "${CURRENT_MOUNTPOINT}" || true
 		umount_image "${CURRENT_MOUNTPOINT}"
 	fi
@@ -283,35 +383,47 @@ function resize_qcow2() {
 		return 1
 	fi
 
-    # 1 boot, 2 rootfs
+    # 1 boot, 2 uefi (optional), 3 rootfs
     #
     # rootfs ext4 ^journal => ext2, second partition
 	# ROOT_MARGIN=$((800*1024*1024))
 	ROOT_MARGIN=$((1*1024*1024))
-	PARTED_OUT=`parted -s -m "/dev/${NBD_DEV}" unit B print`
-	#PART_NO=`echo "$PARTED_OUT" | grep ext[24] | awk -F: ' { print $1 } '`
-	#PART_START=`echo "$PARTED_OUT" | grep ext[24] | awk -F: ' { print substr($2,1,length($2)-1) } '`
-    PART_NO=2
-	PART_START=`echo "$PARTED_OUT" | grep "^${PART_NO}:" | awk -F: ' { print substr($2,1,length($2)-1) } '`
+	PARTED_OUT=$(parted -s -m "/dev/${NBD_DEV}" unit B print)
+	#PART_NO=$(echo "$PARTED_OUT" | grep ext[24] | awk -F: ' { print $1 } ')
+	#PART_START=$(echo "$PARTED_OUT" | grep ext[24] | awk -F: ' { print substr($2,1,length($2)-1) } ')
+    if [ -n "$MAP_EFISYS_DEV" ] ; then
+        PART_NO=3
+    else
+        PART_NO=2
+    fi
+	PART_START=$(echo "$PARTED_OUT" | grep "^${PART_NO}:" | awk -F: ' { print substr($2,1,length($2)-1) } ')
 
 	e2fsck -y -f $MAP_ROOT_DEV || true
 
-	DATA_SIZE=`resize2fs -P $MAP_ROOT_DEV | awk -F': ' ' { print $2 } '`
 	BLOCK_SIZE=$(e2fs_block_size $MAP_ROOT_DEV)
 
-	let DATA_SIZE=$DATA_SIZE+$ROOT_MARGIN/$BLOCK_SIZE
-	resize2fs -p $MAP_ROOT_DEV $DATA_SIZE
-	sleep 1
+    if [ -n "$MAP_EFISYS_DEV" ] ; then
+        # No resize on GPT/UEFI, leave partition layout as-is
+        ROOT_PART_SIZE_BYTES=$(echo "$PARTED_OUT" | grep "^${PART_NO}:" | awk -F: ' { print substr($4,1,length($4)-1) } ')
+        BLOCK_COUNT=$(($(($ROOT_PART_SIZE_BYTES+$BLOCK_SIZE-1))/$BLOCK_SIZE))
+        NEW_IMG_SIZE=
+    else
+        BLOCK_COUNT=$(resize2fs -P $MAP_ROOT_DEV | awk -F': ' ' { print $2 } ')
 
-	let PART_NEW_SIZE=$DATA_SIZE*$BLOCK_SIZE
-	let PART_NEW_END=$PART_START+$PART_NEW_SIZE
-    ACT1=`parted -s "/dev/${NBD_DEV}" rm ${PART_NO}`
-    ACT2=`parted -s "/dev/${NBD_DEV}" unit B mkpart primary $PART_START $PART_NEW_END`
-    NEW_IMG_SIZE=`parted -s -m "/dev/${NBD_DEV}" unit B print free | tail -1 | awk -F: ' { print substr($2,1,length($2)-1) } '`
+        let BLOCK_COUNT=$BLOCK_COUNT+$ROOT_MARGIN/$BLOCK_SIZE
+        resize2fs -p $MAP_ROOT_DEV $BLOCK_COUNT
+        sleep 1
+
+        let PART_NEW_SIZE=$BLOCK_COUNT*$BLOCK_SIZE
+        let PART_NEW_END=$PART_START+$PART_NEW_SIZE
+        ACT1=$(parted -s "/dev/${NBD_DEV}" rm ${PART_NO})
+        ACT2=$(parted -s "/dev/${NBD_DEV}" unit B mkpart primary $PART_START $PART_NEW_END)
+        ROOT_PART_SIZE_BYTES=$PART_NEW_SIZE
+        NEW_IMG_SIZE=$(parted -s -m "/dev/${NBD_DEV}" unit B print free | tail -1 | awk -F: ' { print substr($2,1,length($2)-1) } ')
+    fi
     ROOT_PART_START=$PART_START
-    ROOT_PART_SIZE_BYTES=$PART_NEW_SIZE
     ROOT_PART_BLOCK_SIZE=$BLOCK_SIZE
-    ROOT_PART_BLOCK_COUNT=$DATA_SIZE
+    ROOT_PART_BLOCK_COUNT=$BLOCK_COUNT
 }
 export -f resize_qcow2
 
@@ -350,98 +462,136 @@ function write_partitions_qcow2() {
 }
 export -f write_partitions_qcow2
 
+# finalize fstab device-map entries: finalize_fstab_ro <mountpoint>
+function finalize_fstab_ro() {
+	local MOUNTROOT
+	MOUNTROOT="$1"
+
+    if [ "${ROOTFS_RO}" != "1" ] ; then
+        echo "finalize_fstab_ro only to be used with ROOTFS_RO. Exit."
+        exit 1
+    fi
+
+    echo "Setup hard devicenames"
+    local EFISYS_DEV_NAME BOOT_DEV_NAME ROOT_DEV_NAME
+    EFISYS_DEV_NAME=
+    BOOT_DEV_NAME=
+    ROOT_DEV_NAME=
+    if [ "${GPT_BIOS_UEFI}" = "1" ] ; then
+        EFISYS_DEV_NAME="\/dev\/mmcblk0p2"
+        BOOT_DEV_NAME="\/dev\/mmcblk0p3"
+        ROOT_DEV_NAME="\/dev\/mmcblk0p4"
+    else
+        BOOT_DEV_NAME="\/dev\/mmcblk0p1"
+        ROOT_DEV_NAME="\/dev\/mmcblk0p2"
+    fi
+    echo "EFI:       $EFISYS_DEV_NAME"
+    echo "Boot:      $BOOT_DEV_NAME"
+    echo "Fake Root: $ROOT_DEV_NAME"
+    
+    echo "Set hard device names in fstab (rootfs ro -> /boot uncommented)"
+    sed -i "s/BOOTDEV/${BOOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
+    sed -i "s/EFIDEV/${EFISYS_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
+    sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
+    if [ "${TARGET_RASPI}" = "1" ]; then
+        echo "Set rootfs ro fake device name in cmdline, required"
+        sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
+    fi
+}
+export -f finalize_fstab_ro
+
 # create raw img from qcow2: make_bootable_image <in.qcow2> <out.img>
 function make_bootable_image() {
+	local EXPORT_QCOW2 EXPORT_IMAGE EXPORT_IMAGE_ROOT EXPORT_INFO_ROOT
 	EXPORT_QCOW2="$1"
 	EXPORT_IMAGE="$2"
 	EXPORT_IMAGE_ROOT="$3"
 	EXPORT_INFO_ROOT="$4"
 
-	echo "Connect block device to source qcow2"
-	connect_blkdev "${EXPORT_QCOW2}"
-    
-	CALL_FROM_MBI=1
-	echo "Resize fs"
-	resize_qcow2
-	sync
-	CALL_FROM_MBI=
-    
-	echo "Disconnect block device"
-	disconnect_blkdev
-    
-	if [ -z "$NEW_IMG_SIZE" ]; then
-		echo "NEW_IMG_SIZE could not be calculated, cannot process image. Exit."
-		exit 1
-	fi
-	echo "Shrinking qcow2 image"
-	qemu-img resize --shrink "${EXPORT_QCOW2}" $NEW_IMG_SIZE
-	sync
-
-	echo "Convert qcow2 to raw image"
-	qemu-img convert -f qcow2 -O raw "${EXPORT_QCOW2}" "${EXPORT_IMAGE}"
-	sync
-
-	echo "Get PARTUUIDs from image"
-	IMGID="$(blkid -o value -s PTUUID "${EXPORT_IMAGE}")"
-
-	echo "Mount image ${EXPORT_IMAGE}"
-	MOUNTROOT=${WORK_DIR}/tmpimage
-	mkdir -p $MOUNTROOT
-    mount_rawimage "${EXPORT_IMAGE}" $MOUNTROOT
-
-	if [ ! -d "${MOUNTROOT}/root" ]; then
-		echo "Image damaged or not mounted. Exit."
-		exit 1
-	fi
-
-    if [ "${ROOTFS_RO}" = "1" ] ; then
-        echo "Setup hard devicenames"
-        BOOT_DEV_NAME="\/dev\/mmcblk0p1"
-        echo "Boot: $BOOT_DEV_NAME"
-        ROOT_DEV_NAME="\/dev\/mmcblk0p2"
-        echo "Root1: $ROOT_DEV_NAME"
+    if [ "${ROOTFS_RO}" != "1" ] ; then
+        echo "Connect block device to source qcow2"
+        connect_blkdev "${EXPORT_QCOW2}"
         
-        echo "Set hard device names in fstab (rootfs ro -> /boot uncommented)"
-        sed -i "s/BOOTDEV/${BOOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
-        sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/etc/fstab"
-        if [ "${TARGET_RASPI}" = "1" ]; then
-            echo "Set rootfs ro hard device name in cmdline, required"
-            sed -i "s/ROOTDEV/${ROOT_DEV_NAME}/" "${MOUNTROOT}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
-        fi
-    else
-        echo "Setup PARTUUIDs"
-        BOOT_PARTUUID="${IMGID}-01"
-        echo "Boot: $BOOT_PARTUUID"
-        ROOT_PARTUUID="${IMGID}-02"
-        echo "Root1: $ROOT_PARTUUID"
+        CALL_FROM_MBI=1
+        echo "Resize fs"
+        resize_qcow2
+        sync
+        CALL_FROM_MBI=
 
-        if [ ! -z "$BOOT_PARTUUID" ] && [ ! -z "$ROOT_PARTUUID" ]; then
-            echo "Set UUIDs to make it bootable, required."
-            sed -i "s/BOOTDEV/PARTUUID=${BOOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
-            sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
-            if [ "${TARGET_RASPI}" = "1" ]; then
-                sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
+        echo "Get PARTUUIDs from connected image"
+        local PARTUUID_EFISYS PARTUUID_BOOT PARTUUID_ROOT
+        PARTUUID_EFISYS=
+        PARTUUID_BOOT=
+        PARTUUID_ROOT=
+        if [ -n "${MAP_EFISYS_DEV}" ] ; then
+            PARTUUID_EFISYS=$(blkid -o value -s PARTUUID ${MAP_EFISYS_DEV})
+            echo "PARTUUID_EFISYS ${PARTUUID_EFISYS}"
+        fi
+        if [ -n "${MAP_BOOT_DEV}" ]; then
+            PARTUUID_BOOT=$(blkid -o value -s PARTUUID ${MAP_BOOT_DEV})
+            echo "PARTUUID_BOOT ${PARTUUID_BOOT}"
+        fi
+        if [ -n "${MAP_ROOT_DEV}" ]; then
+            PARTUUID_ROOT=$(blkid -o value -s PARTUUID ${MAP_ROOT_DEV})
+            echo "PARTUUID_ROOT ${PARTUUID_ROOT}"
+        fi
+        
+        echo "Disconnect block device"
+        disconnect_blkdev
+
+        if [ "${GPT_BIOS_UEFI}" != "1" ] ; then
+            if [ -z "$NEW_IMG_SIZE" ]; then
+                echo "NEW_IMG_SIZE could not be calculated, cannot process image. Exit."
+                exit 1
             fi
+            echo "Shrinking qcow2 image"
+            qemu-img resize --shrink "${EXPORT_QCOW2}" $NEW_IMG_SIZE
+            sync
         fi
     fi
+    
+    echo "Convert qcow2 to raw image"
+    echo "- qcow2: ${EXPORT_QCOW2}"
+    echo "- raw:   ${EXPORT_IMAGE}"
+    qemu-img convert -f qcow2 -O raw "${EXPORT_QCOW2}" "${EXPORT_IMAGE}"
+    sync
 
-	echo "Umount image ${EXPORT_IMAGE}"
-	sync
-    umount_image $MOUNTROOT
+    if [ "${ROOTFS_RO}" != "1" ] ; then
+        echo "Mount image ${EXPORT_IMAGE}"
+        MOUNTROOT=${WORK_DIR}/tmpimage
+        mkdir -p $MOUNTROOT
+        mount_rawimage "${EXPORT_IMAGE}" $MOUNTROOT
 
-	echo "Extracting partitions - Writing partitions from ${EXPORT_IMAGE}"
-	connect_raw_blkdev "${EXPORT_IMAGE}"
-    
-	CALL_FROM_MBI=1
-    # 1 boot (512), 2 rootfs (4096)
-	echo "Extract partitions to raw image"
-	write_partitions_qcow2 $MAP_ROOT_DEV  $ROOT_PART_BLOCK_SIZE $ROOT_PART_BLOCK_COUNT $EXPORT_IMAGE_ROOT $EXPORT_INFO_ROOT
-	sync
-	CALL_FROM_MBI=
-    
-	echo "Disconnect block device"
-	disconnect_blkdev
-    
+        if [ ! -d "${MOUNTROOT}/root" ]; then
+            echo "Image damaged or not mounted. Exit."
+            exit 1
+        fi
+
+        echo "Set UUIDs to make it bootable, required."
+        sed -i "s/BOOTDEV/PARTUUID=${PARTUUID_BOOT}/" "${MOUNTROOT}/etc/fstab"
+        sed -i "s/EFIDEV/PARTUUID=${PARTUUID_EFISYS}/" "${MOUNTROOT}/etc/fstab"
+        sed -i "s/ROOTDEV/PARTUUID=${PARTUUID_ROOT}/" "${MOUNTROOT}/etc/fstab"
+        if [ "${TARGET_RASPI}" = "1" ]; then
+            sed -i "s/ROOTDEV/PARTUUID=${PARTUUID_ROOT}/" "${MOUNTROOT}/boot/sys_${TARGET_ARCH}_000/cmdline.txt"
+        fi
+
+        echo "Umount image ${EXPORT_IMAGE}"
+        sync
+        umount_image $MOUNTROOT
+
+        echo "Extracting partitions - Writing partitions from ${EXPORT_IMAGE}"
+        connect_raw_blkdev "${EXPORT_IMAGE}"
+        
+        CALL_FROM_MBI=1
+        # 1 boot (512), 2 rootfs (4096)
+        echo "Extract partitions to raw image"
+        write_partitions_qcow2 $MAP_ROOT_DEV  $ROOT_PART_BLOCK_SIZE $ROOT_PART_BLOCK_COUNT $EXPORT_IMAGE_ROOT $EXPORT_INFO_ROOT
+        sync
+        CALL_FROM_MBI=
+        
+        echo "Disconnect block device"
+        disconnect_blkdev
+    fi
 	echo "Remove qcow2 export image"
 	rm -f "${EXPORT_QCOW2}"
 }

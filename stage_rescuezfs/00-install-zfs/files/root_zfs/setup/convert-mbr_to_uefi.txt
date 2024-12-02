@@ -1,3 +1,22 @@
+Dual BIOS + UEFI Bootable Disk:
+    # EF02 Bios-Boot (Grub core)
+    # EF00 EFI System
+    # BF01 ZFS Root
+    sgdisk --zap-all \
+      --new 1::+1M   --typecode=1:EF02 \
+      --new 2::+700M --typecode=2:EF00 \
+      --new 3::0     --typecode=3:BF01 \
+      /dev/disk/by-id/DISK
+
+Single UEFI Bootable Disk:
+    # EF00 EFI System
+    # BF01 ZFS Root
+    sgdisk --zap-all \
+      --new 1::+700M --typecode=1:EF00 \
+      --new 2::0     --typecode=2:BF01 \
+      /dev/disk/by-id/DISK
+
+
 Setup /boot/efi vfat mount
   505  mkdir /boot/efi
   509  mount /dev/disk/by-id/ata-QEMU_HARDDISK_QM00007-part2 /boot/efi
@@ -10,20 +29,23 @@ Setup /boot/efi vfat mount
   515  mount /boot/efi
 
 Install grub efi
-  522  sudo apt install grub-efi-amd64 -y
   525  dpkg -P grub-pc grub-pc-bin
-  533  rm -rf /boot/grub/i386-pc
-  check
-   - existing /etc/default/grub
-   - only /boot/efi/EFI/debian/ should exist
-     - rm -rf /boot/efi/EFI/GRUB (???)
-   - may need: `sudo apt reinstall grub-efi-amd64 -y`
+  526  rm -rf /boot/grub/i386-pc
+  527  sudo apt install grub-pc-bin efibootmgr grub-efi-amd64 grub-efi-amd64-bin grub-efi-amd64-signed -y
 
-  - Misc
-    - Not needed: `grub-install --target=x86_64-efi --bootloader-id=debian --efi-directory=/boot/efi`
-    - But could `sudo apt install --reinstall grub-efi-amd64`
-  536  update-grub
+  Dual BIOS + UEFI Bootable Disk:
+  - grub-install --target=i386-pc --force-file-id /dev/disk/by-id/DISK
+  - update-grub
+  - mkdir -p /boot/efi/EFI/debian
+  - grub-install --target=x86_64-efi --removable --force-file-id --efi-directory=/boot/efi --bootloader-id=debian
+
+  Single UEFI Bootable Disk:
+  - update-grub
+  - mkdir -p /boot/efi/EFI/debian
+  - grub-install --target=x86_64-efi --removable --force-file-id --efi-directory=/boot/efi --bootloader-id=debian
+
   537  ls -la /boot/grub/
+  537  ls -la /boot/efi/EFI/debian
 
 BIOS
   - Disable Secure-Boot

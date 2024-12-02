@@ -38,3 +38,4 @@ pciutils
 busybox
 initramfs-tools-core
 initramfs-tools
+openssh-server openssh-client

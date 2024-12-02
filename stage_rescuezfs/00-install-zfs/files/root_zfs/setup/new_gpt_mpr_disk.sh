@@ -3,24 +3,15 @@ NDISK1=ata-WDC_WD40EFZX-68AWUN0_WD-WX92DA0798JN
 NDISK2=ata-WDC_WD40EFZX-68AWUN0_WD-WX92DA0791VU
 NDISK3=ata-WDC_WD40EFZX-68AWUN0_WD-WX92DA02K427
 
-# Clear the partition table:
-sgdisk --zap-all /dev/disk/by-id/$NDISK1
-#sgdisk --zap-all /dev/disk/by-id/$NDISK2
-#sgdisk --zap-all /dev/disk/by-id/$NDISK3
+# EF02 Bios-Boot (Grub core)
+# BF01 ZFS Root
+for dname in "${NDISK1}" "${NDISK2}" "${NDISK3}" ; do
+    sgdisk --zap-all \
+      --new 1::+1M   --typecode=1:EF02 \
+      --new 2::0     --typecode=2:BF01 \
+      "/dev/disk/by-id/${dname}"
+done
 
-# 2.2 Partition your disk:
-#
-# Legacy (BIOS) booting (part-1): Used for GRUB boot-code in 'MBR-gap':
-sgdisk -a1 -n1:40:8191 -t1:EF02 /dev/disk/by-id/$NDISK1
-#sgdisk -a1 -n1:40:8191 -t1:EF02 /dev/disk/by-id/$NDISK2
-#sgdisk -a1 -n1:40:8191 -t1:EF02 /dev/disk/by-id/$NDISK3
-
-#Run these in all cases:
-sgdisk     -n2:0:0      -t2:BF01 /dev/disk/by-id/$NDISK1
-#sgdisk     -n2:0:0      -t2:BF01 /dev/disk/by-id/$NDISK2
-#sgdisk     -n2:0:0      -t2:BF01 /dev/disk/by-id/$NDISK3
-
-sleep 3
 sync
 
 echo "Now replace the disk .."

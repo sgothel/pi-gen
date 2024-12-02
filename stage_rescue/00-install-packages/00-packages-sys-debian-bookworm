@@ -14,7 +14,6 @@ isc-dhcp-client ifupdown network-manager net-tools
 wireless-tools wpasupplicant wpagui
 nfs-common nfs-kernel-server nfswatch
 smbclient cifs-utils
-rsync tcpdump wget openssh-server openssh-client iptables
+rsync tcpdump wget iptables
 lsof rpcbind iptraf iftop wireshark tcpdump pcaputils ngrep
 sharutils psmisc patch less
-memtest86+

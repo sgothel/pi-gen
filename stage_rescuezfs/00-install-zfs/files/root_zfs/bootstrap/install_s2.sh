@@ -120,10 +120,12 @@ on_chroot << EOF
     KVERSION=\$(ls /lib/modules/ | tail -n 1)
     update-initramfs -u -k \${KVERSION}
 
+    grub-install --target=i386-pc --force-file-id /dev/disk/by-id/$DISK1
+    grub-install --target=i386-pc --force-file-id /dev/disk/by-id/$DISK2
+    grub-install --target=i386-pc --force-file-id /dev/disk/by-id/$DISK3
     update-grub
-    grub-install /dev/disk/by-id/$DISK1
-    grub-install /dev/disk/by-id/$DISK2
-    grub-install /dev/disk/by-id/$DISK3
+    mkdir -p /boot/efi/EFI/debian
+    grub-install --target=x86_64-efi --removable --force-file-id --efi-directory=/boot/efi --bootloader-id=debian
 EOF
 
 
