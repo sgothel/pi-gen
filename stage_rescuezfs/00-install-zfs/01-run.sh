@@ -13,10 +13,6 @@ if [ "${TARGET_RASPI}" != "1" -a "${TARGET_ARCH}" = "amd64" ]; then
         . ./zfs-remove.sh
         if [ "${RELEASE}" = "bookworm" ]; then
             . ./zfs-install-debian12-${TARGET_ARCH}.sh
-        elif [ "${RELEASE}" = "bullseye" ]; then
-            . ./zfs-install-debian11-${TARGET_ARCH}.sh
-        elif [ "${RELEASE}" = "buster" ]; then
-            . ./zfs-install-debian10-${TARGET_ARCH}.sh
         else
             echo "No ZFS packages provisioned for RELEASE ${RELEASE}"
             exit 2
