@@ -74,6 +74,8 @@ lib_connect_blkdev3() {
         qemu-nbd --discard=unmap -c "/dev/${nbd_dev}" "${img_file}"
     fi
 	sync
+    sleep 2
+    sync
 	kpartx -a "/dev/${nbd_dev}"
 	sync
     return 0

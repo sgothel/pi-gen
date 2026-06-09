@@ -255,6 +255,8 @@ load_qimage() {
 				sync
 				qemu-nbd --discard=unmap -c /dev/${NBD_DEV} image-${STAGE}.qcow2
 				sync
+                sleep 2s
+                sync
                 if [ -n "$MAP_EFISYS_DEV" ] ; then
                     if [ "${ROOTFS_RO}" = "1" ] ; then
                         # 1 bios-boot (1 MiB), efi-sys (700MiB), boot (remainder of BASE_QCOW2_SIZE)
@@ -325,6 +327,8 @@ EOF
 				sync
 				qemu-nbd --discard=unmap -c /dev/${NBD_DEV} image-${STAGE}.qcow2
 				sync
+                sleep 2s
+                sync
 				kpartx -a /dev/${NBD_DEV}
                 if [ "${ROOTFS_RO}" = "1" ]; then
                     if [[ -z "${PREV_ROOTFS_DIR}" || ! -d "${PREV_ROOTFS_DIR}" ]]; then
