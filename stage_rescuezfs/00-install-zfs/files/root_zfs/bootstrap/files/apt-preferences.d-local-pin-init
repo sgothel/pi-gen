@@ -1,4 +1,4 @@
-Package: zfs-zed zfsutils-linux libzfs2linux libzpool2linux libuutil1linux libnvpair1linux spl spl-dkms
+Package: zfs-zed zfsutils-linux libzfsbootenv1linux libzfslinux-dev libzfs2linux libzfs4linux libzfs6linux libzfs7linux libzpool2linux libuutil1linux libuutil2linux libuutil3linux libnvpair1linux libnvpair2linux libnvpair3linux libzpool4linux libzpool5linux libzpool6linux libzpool7linux spl spl-dkms
 Pin: version *
 Pin-Priority: -1
 

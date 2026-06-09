@@ -54,15 +54,15 @@ SELEOF
     # Fundamentals
     apt_install less sysfsutils grub-pc-bin efibootmgr grub-efi-amd64 grub-efi-amd64-bin grub-efi-amd64-signed \
                 vim sharutils psmisc htop patch fbset sudo \
-                console-setup keyboard-configuration debconf-utils parted unzip bash-completion \
+                console-setup keyboard-configuration debconf-utils gdisk parted unzip bash-completion \
                 manpages-dev gdb pkg-config libstdc++6 python3-minimal strace \
                 v4l-utils lua5.1 luajit hardlink ca-certificates \
                 usbutils libfreetype6-dev dosfstools squashfs-tools fatattr \
                 lzop apt-listchanges usb-modeswitch libmtp-runtime htop iotop powertop \
-                man-db policykit-1 rng-tools ntfs-3g pciutils busybox initramfs-tools-core initramfs-tools
+                man-db rng-tools ntfs-3g pciutils busybox initramfs-tools-core initramfs-tools
 
     # debootstrap requirements (pi-gen requirements on target for reproduction)
-    apt_install coreutils quilt parted qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep \
+    apt_install coreutils quilt qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep \
                 xz-utils file git curl bc qemu-utils kpartx squashfs-tools fatattr
 
     # ensure sysfsutils is enabled at boot

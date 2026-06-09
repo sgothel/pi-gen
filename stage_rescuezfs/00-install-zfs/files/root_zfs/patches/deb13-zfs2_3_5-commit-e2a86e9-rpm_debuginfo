@@ -1,0 +1,40 @@
+From e2a86e9c25649fd1439fa976f5a18e6f429d7b78 Mon Sep 17 00:00:00 2001
+From: Sven Göthel <sgothel@jausoft.com>
+Date: Sun, 14 Dec 2025 13:16:39 +0100
+Subject: Debian 13: Fix `deb` target (via rpm) w/o debuginfo, i.e. injecting
+
+Patch injects `--nodebuginfo` to RPMBUILD to avoid building debuginfo packages.
+
+Resolves build error:
+```
+Processing files: zfs-kmod-debuginfo-2.3.5-1.x86_64
+error: Empty %files file /tmp/zfs-build-sven-rx35OT1r/BUILD/zfs-kmod-2.3.5-build/zfs-kmod-2.3.5/debugfiles.list
+
+RPM build errors:
+    Empty %files file /tmp/zfs-build-sven-rx35OT1r/BUILD/zfs-kmod-2.3.5-build/zfs-kmod-2.3.5/debugfiles.list
+make[1]: *** [Makefile:14774: rpm-common] Error 1
+make[1]: Leaving directory '/usr/local/projects/openzfs_build_env/zfs'
+make: *** [Makefile:14708: rpm-kmod] Error 2
+
+```
+
+diff --git a/config/rpm.am b/config/rpm.am
+index 85c56c0b2..ea99c5c89 100644
+--- a/config/rpm.am
++++ b/config/rpm.am
+@@ -82,6 +82,7 @@ srpm-common:
+ 		rpmspec="$$rpmspec" \
+ 		rpm-local || exit 1; \
+ 	LANG=C $(RPMBUILD) \
++		--nodebuginfo \
+ 		--define "_tmppath $$rpmbuild/TMP" \
+ 		--define "_builddir $$rpmbuild/BUILD" \
+ 		--define "_rpmdir $$rpmbuild/RPMS" \
+@@ -103,6 +104,7 @@ rpm-common:
+ 		rpmspec="$$rpmspec" \
+ 		rpm-local || exit 1; \
+ 	LANG=C ${RPMBUILD} \
++		--nodebuginfo \
+ 		--define "_tmppath $$rpmbuild/TMP" \
+ 		--define "_builddir $$rpmbuild/BUILD" \
+ 		--define "_rpmdir $$rpmbuild/RPMS" \

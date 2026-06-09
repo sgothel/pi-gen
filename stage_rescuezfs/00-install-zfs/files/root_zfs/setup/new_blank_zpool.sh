@@ -10,6 +10,10 @@ export POOL=tpool2
 export ZFS_COMPRESSION_METHOD=lz4
 # export ZFS_COMPRESSION_METHOD=zstd
 
+# default recordsize 128k, use 1M for big files
+# export ZFS_RECORDSIZE=128k
+export ZFS_BIG_RECORDSIZE=1M
+
 #
 # Manually enabled ZFS features for GRUB compatibility!
 # See https://wiki.archlinux.org/title/ZFS#GRUB-compatible_pool_creation
@@ -20,8 +24,11 @@ zpool create -f -o ashift=12 -o autoexpand=on \
       -O mountpoint=/ -R ${ROOTFS_DIR} \
       -d \
         -o compatibility=grub2_readonly \
+        -o feature@allocation_classes=enabled \
         -o feature@async_destroy=enabled \
+        -o feature@block_cloning=enabled \
         -o feature@bookmarks=enabled \
+        -o feature@device_rebuild=enabled \
         -o feature@embedded_data=enabled \
         -o feature@empty_bpobj=enabled \
         -o feature@enabled_txg=enabled \
@@ -29,17 +36,15 @@ zpool create -f -o ashift=12 -o autoexpand=on \
         -o feature@filesystem_limits=enabled \
         -o feature@hole_birth=enabled \
         -o feature@large_blocks=enabled \
-        -o feature@lz4_compress=enabled \
-        -o feature@spacemap_histogram=enabled \
-        -o feature@allocation_classes=enabled \
-        -o feature@device_rebuild=enabled \
         -o feature@livelist=enabled \
         -o feature@log_spacemap=enabled \
-        -o feature@obsolete_counts=enabled \
+        -o feature@lz4_compress=enabled \
         -o feature@project_quota=enabled \
         -o feature@resilver_defer=enabled \
+        -o feature@spacemap_histogram=enabled \
         -o feature@spacemap_v2=enabled \
         -o feature@userobj_accounting=enabled \
+        -o feature@zilsaxattr=enabled \
         -o feature@zpool_checkpoint=enabled \
       \
       $POOL raidz1 \

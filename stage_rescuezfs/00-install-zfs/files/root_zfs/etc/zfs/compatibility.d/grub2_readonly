@@ -1,0 +1,33 @@
+# Features which are supported by GRUB2 versions from v2.12 onwards.
+allocation_classes
+async_destroy
+block_cloning
+bookmarks
+device_rebuild
+embedded_data
+empty_bpobj
+enabled_txg
+extensible_dataset
+filesystem_limits
+hole_birth
+large_blocks
+livelist
+log_spacemap
+lz4_compress
+project_quota
+resilver_defer
+spacemap_histogram
+spacemap_v2
+userobj_accounting
+zilsaxattr
+zpool_checkpoint
+
+# (Additional) Read-Only Features which are also supported by grub2 (zfs 2.1.6)
+# class_of_storage
+# meta_devices
+obsolete_counts
+# vdev_properties
+#
+# Extra sneakend in at zfs ceate (zfs 2.1.6)
+device_removal
+

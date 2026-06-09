@@ -7,6 +7,8 @@
 ##
 
 export BASE_DIR=`dirname $(readlink -f "${BASH_SOURCE[0]}")`
+export PROJECT_DIR=`readlink -f ..`
+export PROJECT_NAME=`basename ${PROJECT_DIR}`
 
 source "${BASE_DIR}/install.cfg"
 
@@ -54,7 +56,9 @@ EOF
 
 ##
 ## stage0 setup locales and install kernel/firmware
+## (ensure same kernel version as host)
 ##
+export KVERSION_HOST=$(ls /lib/modules/ | tail -n 1)
 
 on_chroot << EOF
     $(declare -f apt_install)
@@ -67,9 +71,9 @@ SELEOF
 
     # firmware and kernel
     apt_install gdisk build-essential dkms dpkg-dev linux-headers-${TARGET_ARCH} linux-image-${TARGET_ARCH} \
-                amd64-microcode intel-microcode \
+                linux-headers-${KVERSION_HOST} linux-image-${KVERSION_HOST} \
                 atmel-firmware firmware-amd-graphics firmware-bnx2 firmware-bnx2x \
-                firmware-brcm80211 firmware-intelwimax  \
+                firmware-brcm80211 \
                 firmware-iwlwifi firmware-libertas firmware-linux firmware-linux-free firmware-linux-nonfree \
                 firmware-misc-nonfree firmware-myricom firmware-netxen firmware-qlogic firmware-realtek \
                 bluez-firmware
@@ -79,33 +83,33 @@ EOF
 ## stage0 ZFS package
 ##
 
-cp -a ${BASE_DIR}/../../zfs "${ROOTFS_DIR}/root/"
+
+cp -a ${PROJECT_DIR} "${ROOTFS_DIR}/root/zfs"
 
 on_chroot << EOF
     # Build ZFS from scratch requirements
     apt_install sysfsutils grub-pc-bin efibootmgr grub-efi-amd64 grub-efi-amd64-bin grub-efi-amd64-signed \
-                build-essential autoconf automake libtool gawk alien fakeroot dkms libblkid-dev uuid-dev libudev-dev \
-                libssl-dev zlib1g-dev libaio-dev libattr1-dev libelf-dev \
-                linux-headers-generic \
-                python3 python3-dev python3-setuptools python3-cffi libffi-dev python3-packaging git libcurl4-openssl-dev \
-                linux-headers-amd64 libselinux-dev \
-                parted lsscsi wget ksh gdebi python3-distutils
+                linux-headers-generic libselinux-dev gdisk parted lsscsi wget ksh gdebi
+
+    apt_install alien autoconf automake build-essential debhelper-compat dh-autoreconf dh-dkms dh-python dkms fakeroot gawk \
+                git libaio-dev libattr1-dev libblkid-dev libcurl4-openssl-dev libelf-dev libffi-dev libpam0g-dev libssl-dev libtirpc-dev \
+                libtool libudev-dev linux-headers-generic parallel po-debconf \
+                python3 python3-all-dev python3-cffi python3-dev python3-packaging python3-setuptools python3-sphinx \
+                uuid-dev zlib1g-dev libunwind-dev python3-distutils-extra
 
     # Replace Debian ZFS packages and replace with vanilla latest release
     cd /root/zfs
-    . ./zfs-remove.sh
-    if [ "${RELEASE}" = "bookworm" ]; then
-        . ./zfs-install-debian12-${TARGET_ARCH}.sh
-    elif [ "${RELEASE}" = "bullseye" ]; then
-        . ./zfs-install-debian11-${TARGET_ARCH}.sh
-    elif [ "${RELEASE}" = "buster" ]; then
-        . ./zfs-install-debian10-${TARGET_ARCH}.sh
+    . ./scripts/zfs-remove.sh
+    if [ "${RELEASE}" = "trixie" ]; then
+        . ./scripts/zfs-install-debian13-${TARGET_ARCH}.sh
+    elif [ "${RELEASE}" = "bookworm" ]; then
+        . ./scripts/zfs-install-debian12-${TARGET_ARCH}.sh
     else
         echo "No ZFS packages provisioned for RELEASE ${RELEASE}"
         exit 2
     fi
 
-    cat ./apt-preferences.d-local-pin-init >> /etc/apt/preferences.d/local-pin-init
+    cat ./bootstrap/files/apt-preferences.d-local-pin-init >> /etc/apt/preferences.d/local-pin-init
 
     systemctl enable zfs-import-cache.service zfs-mount.service zfs-zed.service zfs-import.target zfs-volumes.target zfs.target
     systemctl start zfs-import-cache.service zfs-mount.service zfs-zed.service zfs-import.target zfs-volumes.target zfs.target

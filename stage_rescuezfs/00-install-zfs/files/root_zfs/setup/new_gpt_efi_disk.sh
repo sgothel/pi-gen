@@ -23,4 +23,4 @@ mkfs.fat -n EFISYS -F32 /dev/disk/by-id/$NDISK2-part2
 mkfs.fat -n EFISYS -F32 /dev/disk/by-id/$NDISK3-part2
 
 echo "Now replace the disk .."
-echo "zpool replace risa 12458555210078177352 /dev/disk/by-id/ata-WDC_WD40EFZX-68AWUN0_WD-WX92DA0798JN-part1"
+echo "zpool replace POOL <removed-disk-id> /dev/disk/by-id/${NDISK1}-part3"

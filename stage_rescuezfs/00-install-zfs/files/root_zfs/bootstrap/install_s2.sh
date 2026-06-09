@@ -116,9 +116,17 @@ EOF
 #
 sed -i 's/#GRUB_TERMINAL=.*$/GRUB_TERMINAL=console/g' "${ROOTFS_DIR}/etc/default/grub"
 
+export KVERSION_HOST=$(ls /lib/modules/ | tail -n 1)
+
 on_chroot << EOF
     KVERSION=\$(ls /lib/modules/ | tail -n 1)
     update-initramfs -u -k \${KVERSION}
+    if [ "\${KVERSION}" != "${KVERSION_HOST}" ] ; then
+        update-initramfs -u -k ${KVERSION_HOST}
+    fi
+
+    mkdir /boot/efi
+    mount /dev/disk/by-id/$DISK1-part2 /boot/efi
 
     grub-install --target=i386-pc --force-file-id /dev/disk/by-id/$DISK1
     grub-install --target=i386-pc --force-file-id /dev/disk/by-id/$DISK2

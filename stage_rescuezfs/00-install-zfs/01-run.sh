@@ -10,15 +10,15 @@ if [ "${TARGET_RASPI}" != "1" -a "${TARGET_ARCH}" = "amd64" ]; then
     on_chroot << EOF
         # Replace Debian ZFS packages and replace with vanilla latest release
         cd /root/zfs
-        . ./zfs-remove.sh
-        if [ "${RELEASE}" = "bookworm" ]; then
-            . ./zfs-install-debian12-${TARGET_ARCH}.sh
+        . ./scripts/zfs-remove.sh
+        if [ "${RELEASE}" = "trixie" ]; then
+            . ./scripts/zfs-install-debian13-${TARGET_ARCH}.sh
         else
             echo "No ZFS packages provisioned for RELEASE ${RELEASE}"
             exit 2
         fi
 
-        cat ./apt-preferences.d-local-pin-init >> /etc/apt/preferences.d/local-pin-init
+        cat ./bootstrap/files/apt-preferences.d-local-pin-init >> /etc/apt/preferences.d/local-pin-init
 
         apt-get update
         apt-get clean

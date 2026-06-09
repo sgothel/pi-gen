@@ -1,0 +1,20 @@
+package: zfs-initramfs
+file: /usr/share/initramfs-tools/hooks/zfs
+
+See new commit 02fced3067798cbc5472f180e4c6d36f4c441a77 on master branch ;-)
+
+See https://github.com/openzfs/zfs/pull/9089
+See https://github.com/openzfs/zfs/commit/c75d3968bd4f2d6efeb7d1739fc5dde661b34f18
+
+
+--- usr/share/initramfs-tools/hooks/zfs.orig	2020-07-16 12:56:17.000000000 +0200
++++ usr/share/initramfs-tools/hooks/zfs	2020-07-24 04:47:39.705191431 +0200
+@@ -12,7 +12,7 @@
+ COPY_EXEC_LIST="$COPY_EXEC_LIST /sbin/mount.zfs /lib/udev/vdev_id"
+ COPY_EXEC_LIST="$COPY_EXEC_LIST /lib/udev/zvol_id"
+ COPY_FILE_LIST="/etc/hostid /etc/zfs/zpool.cache"
+-COPY_FILE_LIST="$COPY_FILE_LIST @DEFAULT_INITCONF_DIR@/zfs"
++COPY_FILE_LIST="$COPY_FILE_LIST /etc/default/zfs"
+ COPY_FILE_LIST="$COPY_FILE_LIST /etc/zfs/zfs-functions"
+ COPY_FILE_LIST="$COPY_FILE_LIST /etc/zfs/vdev_id.conf"
+ COPY_FILE_LIST="$COPY_FILE_LIST /lib/udev/rules.d/60-zvol.rules"

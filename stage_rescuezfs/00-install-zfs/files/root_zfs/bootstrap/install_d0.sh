@@ -11,6 +11,7 @@ source "${BASE_DIR}/install.cfg"
 source "${BASE_DIR}/common.sh"
 
 export ZFS_COMPRESSION_METHOD=${ZFS_COMPRESSION_METHOD:-lz4}
+export ZFS_BIG_RECORDSIZE=1M
 
 modprobe zfs
 
@@ -40,6 +41,10 @@ done
 sleep 3
 sync
 
+mkfs.fat -n EFISYS -F32 /dev/disk/by-id/$DISK1-part2
+mkfs.fat -n EFISYS -F32 /dev/disk/by-id/$DISK2-part2
+mkfs.fat -n EFISYS -F32 /dev/disk/by-id/$DISK3-part2
+
 ##
 ## Create POOL
 ##
@@ -56,8 +61,11 @@ zpool create -f -o ashift=12 -o autoexpand=on \
       -O mountpoint=/ -R ${ROOTFS_DIR} \
       -d \
         -o compatibility=grub2_readonly \
+        -o feature@allocation_classes=enabled \
         -o feature@async_destroy=enabled \
+        -o feature@block_cloning=enabled \
         -o feature@bookmarks=enabled \
+        -o feature@device_rebuild=enabled \
         -o feature@embedded_data=enabled \
         -o feature@empty_bpobj=enabled \
         -o feature@enabled_txg=enabled \
@@ -65,23 +73,21 @@ zpool create -f -o ashift=12 -o autoexpand=on \
         -o feature@filesystem_limits=enabled \
         -o feature@hole_birth=enabled \
         -o feature@large_blocks=enabled \
-        -o feature@lz4_compress=enabled \
-        -o feature@spacemap_histogram=enabled \
-        -o feature@allocation_classes=enabled \
-        -o feature@device_rebuild=enabled \
         -o feature@livelist=enabled \
         -o feature@log_spacemap=enabled \
-        -o feature@obsolete_counts=enabled \
+        -o feature@lz4_compress=enabled \
         -o feature@project_quota=enabled \
         -o feature@resilver_defer=enabled \
+        -o feature@spacemap_histogram=enabled \
         -o feature@spacemap_v2=enabled \
         -o feature@userobj_accounting=enabled \
+        -o feature@zilsaxattr=enabled \
         -o feature@zpool_checkpoint=enabled \
       \
       $POOL raidz2 \
-      /dev/disk/by-id/$DISK1-part2 \
-      /dev/disk/by-id/$DISK2-part2 \
-      /dev/disk/by-id/$DISK3-part2
+      /dev/disk/by-id/$DISK1-part3 \
+      /dev/disk/by-id/$DISK2-part3 \
+      /dev/disk/by-id/$DISK3-part3
 
 zpool autoexpand=on $POOL
 zpool autoreplace=off $POOL
@@ -109,8 +115,10 @@ zfs create -o mountpoint=/root $POOL/users/root
 
 zfs create -o mountpoint=/backup -o compression=${ZFS_COMPRESSION_METHOD} $POOL/backup
 zfs create -o mountpoint=/data $POOL/data
+zfs create -o mountpoint=/data2 -o recordsize=${ZFS_BIG_RECORDSIZE} ${POOL}/data2
 zfs create -o mountpoint=/srv $POOL/services
 zfs create -o mountpoint=/usr/local/projects -o compression=${ZFS_COMPRESSION_METHOD} $POOL/projects
+zfs create -o mountpoint=/var/lib/mysql -o recordsize=16K ${POOL}/mysql
 
 ## Export / Import ( '-d ..' also changes the dev names )
 ##zpool export $POOL
