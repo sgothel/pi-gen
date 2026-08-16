@@ -5,8 +5,10 @@ DISK2=ata-QEMU_HARDDISK_QM00009
 DISK3=ata-QEMU_HARDDISK_QM00011
 
 export ROOTFS_DIR="/mnt"
+
+# WARNING: ZFS ZVOL swap on Linux is buggy!
+# See <https://github.com/openzfs/zfs/issues/7734>
 # export MYSWAPSIZE=64G
-# export MYSWAPSIZE=1G
 
 export POOL=tpool2
 export ZFS_COMPRESSION_METHOD=lz4
@@ -50,9 +52,9 @@ zpool create -f -o ashift=12 -o autoexpand=on \
         -o feature@zpool_checkpoint=enabled \
       \
       $POOL raidz1 \
-      /dev/disk/by-id/$DISK1-part3 \
-      /dev/disk/by-id/$DISK2-part3 \
-      /dev/disk/by-id/$DISK3-part3
+      /dev/disk/by-id/$DISK1-part4 \
+      /dev/disk/by-id/$DISK2-part4 \
+      /dev/disk/by-id/$DISK3-part4
 
 zpool autoexpand=on $POOL
 zpool autoreplace=off $POOL
@@ -87,18 +89,17 @@ zfs create -o mountpoint=/var/lib/mysql -o recordsize=16K ${POOL}/mysql
 
 if [ ! -z "$MYSWAPSIZE" ]; then
     # SWAP
-    zfs create -V $MYSWAPSIZE -b $(getconf PAGESIZE) -o compression=zle \
+    zfs create -V ${MYSWAPSIZE} \
+          -b $(getconf PAGESIZE) \
+          -o compression=off \
+          -o dedup=off \
+          -o checksum=off \
           -o logbias=throughput -o sync=always \
           -o primarycache=metadata -o secondarycache=none \
           -o com.sun:auto-snapshot=false $POOL/swap
 
-    zfs set compression=zle $POOL/swap
-    zfs set logbias=throughput $POOL/swap
-    zfs set sync=always $POOL/swap
-    zfs set primarycache=metadata $POOL/swap
-    zfs set secondarycache=none $POOL/swap
-    zfs set com.sun:auto-snapshot=false $POOL/swap
-    zfs set checksum=off $POOL/swap
+    # vm.swappiness=10 or even lower?
+    # sync=standard for speed-up, but perhaps not freeing mem asap
 
     mkswap -f /dev/zvol/$POOL/swap
     echo /dev/zvol/$POOL/swap none swap defaults 0 0 >> /etc/fstab

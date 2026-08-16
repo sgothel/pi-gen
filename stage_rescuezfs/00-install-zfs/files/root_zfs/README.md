@@ -3,7 +3,7 @@
 [Original document location](https://jausoft.com/cgit/openzfs/openzfs_build_env.git/about/).
 
 Current environment covers [OpenZFS](https://openzfs.github.io/openzfs-docs/)
-for GNU/Linux version [2.4.2](https://github.com/openzfs/zfs/releases/tag/zfs-2.4.2).
+for GNU/Linux version [2.4.3](https://github.com/openzfs/zfs/releases/tag/zfs-2.4.3).
 
 I also host branches with [Debian build fixes](https://jausoft.com/cgit/openzfs/zfs.git).
 
@@ -44,7 +44,7 @@ Fetching the [original sources](https://github.com/openzfs/zfs).
 ```bash
 git clone https://github.com/openzfs/zfs
 cd zfs
-git checkout -b b_zfs-2.4.2 zfs-2.4.2
+git checkout -b b_zfs-2.4.3 zfs-2.4.3
 cd ..
 ```
 
@@ -54,7 +54,7 @@ Fetching the [jausoft branch](git://jausoft.com/srv/scm/openzfs/zfs.git)
 ```bash
 git clone git://jausoft.com/srv/scm/openzfs/zfs.git
 cd zfs
-git checkout -b b_zfs-2.4.2_debian13 --track origin/b_zfs-2.4.2_debian13
+git checkout -b b_zfs-2.4.3_debian13 --track origin/b_zfs-2.4.3_debian13
 cd ..
 ```
 
@@ -88,7 +88,7 @@ cd openzfs_build_env
 sh scripts/zfs-remove.sh
 
 # Install new zfs packages
-sh scripts/zfs-2.4.2-1-install-debian13-amd64.sh
+sh scripts/zfs-2.4.3-1-install-debian13-amd64.sh
 
 # Update /etc/default/zfs
 cd /etc/default/
@@ -116,7 +116,7 @@ dkms status
 and manually install modules for missing (new) kernel, e.g.
 
 ```
-dkms install zfs/2.4.0 -k 6.12.90+deb13.1-amd64
+dkms install zfs/2.4.3 -k 6.12.90+deb13.1-amd64
 ```
 
 #### Update the initramfs

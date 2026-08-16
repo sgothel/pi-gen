@@ -48,9 +48,9 @@ zpool create -f -o ashift=12 -o autoexpand=on \
         -o feature@zpool_checkpoint=enabled \
       \
       $POOL raidz1 \
-      /dev/disk/by-id/$DISK1-part3 \
-      /dev/disk/by-id/$DISK2-part3 \
-      /dev/disk/by-id/$DISK3-part3
+      /dev/disk/by-id/$DISK1-part4 \
+      /dev/disk/by-id/$DISK2-part4 \
+      /dev/disk/by-id/$DISK3-part4
 
 zpool autoexpand=on $POOL
 zpool autoreplace=off $POOL

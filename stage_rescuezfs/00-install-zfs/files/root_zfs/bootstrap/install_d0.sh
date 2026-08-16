@@ -29,12 +29,15 @@ modprobe zfs
 #
 # EF02 Bios-Boot (Grub core)
 # EF00 EFI System
+# 8200 Linux Swap
 # BF01 ZFS Root
 for dname in "${DISK1}" "${DISK2}" "${DISK3}" ; do
     sgdisk --zap-all \
-      --new 1::+1M   --typecode=1:EF02 \
-      --new 2::+700M --typecode=2:EF00 \
-      --new 3::0     --typecode=3:BF01 \
+      --set-alignment=4096 --align-end \
+      --new 1::+1MiB   --typecode=1:EF02 \
+      --new 2::+700MiB --typecode=2:EF00 \
+      --new 3::+64GiB  --typecode=3:8200 \
+      --new 4::0       --typecode=4:BF01 \
       "/dev/disk/by-id/${dname}"
 done
 
@@ -85,9 +88,9 @@ zpool create -f -o ashift=12 -o autoexpand=on \
         -o feature@zpool_checkpoint=enabled \
       \
       $POOL raidz2 \
-      /dev/disk/by-id/$DISK1-part3 \
-      /dev/disk/by-id/$DISK2-part3 \
-      /dev/disk/by-id/$DISK3-part3
+      /dev/disk/by-id/$DISK1-part4 \
+      /dev/disk/by-id/$DISK2-part4 \
+      /dev/disk/by-id/$DISK3-part4
 
 zpool autoexpand=on $POOL
 zpool autoreplace=off $POOL

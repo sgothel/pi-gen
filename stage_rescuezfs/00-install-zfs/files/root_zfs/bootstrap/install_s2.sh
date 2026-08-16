@@ -142,27 +142,30 @@ EOF
 #
 
 on_chroot << EOF
-    # SWAP
-    zfs create -V $MYSWAPSIZE -b $(getconf PAGESIZE) -o compression=zle \
-          -o logbias=throughput -o sync=always \
-          -o primarycache=metadata -o secondarycache=none \
-          -o com.sun:auto-snapshot=false $POOL/swap
+    # WARNING: ZFS ZVOL swap on Linux is buggy!
+    # See <https://github.com/openzfs/zfs/issues/7734>
+    if [ ! -z "$ZFS_SWAPSIZE" ]; then
+        # SWAP
+        zfs create -V ${ZFS_SWAPSIZE} \
+              -b $(getconf PAGESIZE) \
+              -o compression=off \
+              -o dedup=off \
+              -o checksum=off \
+              -o logbias=throughput -o sync=always \
+              -o primarycache=metadata -o secondarycache=none \
+              -o com.sun:auto-snapshot=false $POOL/swap
 
-    zfs set compression=zle $POOL/swap
-    zfs set logbias=throughput $POOL/swap
-    zfs set sync=always $POOL/swap
-    zfs set primarycache=metadata $POOL/swap
-    zfs set secondarycache=none $POOL/swap
-    zfs set com.sun:auto-snapshot=false $POOL/swap
-    zfs set checksum=off $POOL/swap
+        # vm.swappiness=10 or even lower?
+        # sync=standard for speed-up, but perhaps not freeing mem asap
 
-    mkswap -f /dev/zvol/$POOL/swap
-    echo /dev/zvol/$POOL/swap none swap defaults 0 0 >> /etc/fstab
-    # UUID=ee57ce05-7287-4b37-93c4-03aeaba756f1
-    # /etc/fstab
-    # /dev/zvol/$POOL/swap   none  		   swap    defaults  0  0
-    # 
-    swapon /dev/zvol/$POOL/swap
+        mkswap -f /dev/zvol/$POOL/swap
+        echo /dev/zvol/$POOL/swap none swap defaults 0 0 >> /etc/fstab
+        # UUID=ee57ce05-7287-4b37-93c4-03aeaba756f1
+        # /etc/fstab
+        # /dev/zvol/$POOL/swap   none  		   swap    defaults  0  0
+        # 
+        swapon /dev/zvol/$POOL/swap
+    fi
 
     # logrotate w/o compression (zfs is compressed)
     for f in /etc/logrotate.d/* ; do

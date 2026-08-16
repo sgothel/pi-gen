@@ -4,7 +4,7 @@ export POOL2=tpool2
 export SNAPNAME=transfer
 
 zfs snapshot -r $POOL1@$SNAPNAME
-zfs send -R $POOL1@$SNAPNAME | zfs receive -Fduv $POOL2
+zfs send -V -R $POOL1@$SNAPNAME | zfs receive -Fduv -x encryption -x mountpoint $POOL2
 
 zfs destroy -r $POOL1@$SNAPNAME
 zfs destroy -r $POOL2@$SNAPNAME
