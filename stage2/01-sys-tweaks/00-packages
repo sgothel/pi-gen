@@ -39,3 +39,4 @@ busybox
 initramfs-tools-core
 initramfs-tools
 openssh-server openssh-client
+iotop htop
